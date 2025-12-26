@@ -1,0 +1,248 @@
+import { useState, useEffect } from 'react';
+import { ArrowLeft, Save, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { ImageUpload } from '../shared/ImageUpload';
+import { RichTextEditor } from '../shared/RichTextEditor';
+import type { NewsItem } from './NewsManagement';
+
+interface NewsFormProps {
+    news?: NewsItem | null;
+    onSuccess: () => void;
+    onCancel: () => void;
+}
+
+export const NewsForm = ({ news, onSuccess, onCancel }: NewsFormProps) => {
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [categories, setCategories] = useState<string[]>([]);
+    const { toast } = useToast();
+
+    const [formData, setFormData] = useState({
+        title: news?.title || '',
+        excerpt: news?.excerpt || '',
+        content: news?.content || '',
+        category: news?.category || '',
+        cover_image_url: news?.cover_image_url || '',
+        is_published: news?.is_published || false,
+        is_pinned: news?.is_pinned || false,
+    });
+
+    useEffect(() => {
+        fetchCategories();
+    }, []);
+
+    const fetchCategories = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('news_categories')
+                .select('name')
+                .order('name');
+
+            if (error) throw error;
+            setCategories(data?.map((c) => c.name) || []);
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+
+        try {
+            const dataToSave = {
+                ...formData,
+                published_at: formData.is_published ? new Date().toISOString() : null,
+                updated_at: new Date().toISOString(),
+            };
+
+            if (news) {
+                // Update existing news
+                const { error } = await supabase
+                    .from('news')
+                    .update(dataToSave)
+                    .eq('id', news.id);
+
+                if (error) throw error;
+
+                toast({
+                    title: 'บันทึกสำเร็จ',
+                    description: 'แก้ไขข่าวสารเรียบร้อยแล้ว',
+                });
+            } else {
+                // Create new news
+                const { error } = await supabase.from('news').insert({
+                    ...dataToSave,
+                    sort_order: 0,
+                    views: 0,
+                });
+
+                if (error) throw error;
+
+                toast({
+                    title: 'สร้างสำเร็จ',
+                    description: 'เพิ่มข่าวสารใหม่เรียบร้อยแล้ว',
+                });
+            }
+
+            onSuccess();
+        } catch (error: any) {
+            toast({
+                title: 'เกิดข้อผิดพลาด',
+                description: error.message,
+                variant: 'destructive',
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="p-8">
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle className="text-2xl">
+                                {news ? 'แก้ไขข่าวสาร' : 'เพิ่มข่าวสารใหม่'}
+                            </CardTitle>
+                            <CardDescription>
+                                กรอกข้อมูลข่าวสารให้ครบถ้วน
+                            </CardDescription>
+                        </div>
+                        <Button variant="outline" onClick={onCancel}>
+                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            ย้อนกลับ
+                        </Button>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        {/* Title */}
+                        <div className="space-y-2">
+                            <Label htmlFor="title">
+                                หัวข้อข่าว <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                                id="title"
+                                value={formData.title}
+                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                placeholder="ระบุหัวข่าว"
+                                required
+                            />
+                        </div>
+
+                        {/* Category */}
+                        <div className="space-y-2">
+                            <Label htmlFor="category">
+                                หมวดหมู่ <span className="text-destructive">*</span>
+                            </Label>
+                            <Select
+                                value={formData.category}
+                                onValueChange={(value) => setFormData({ ...formData, category: value })}
+                                required
+                            >
+                                <SelectTrigger id="category">
+                                    <SelectValue placeholder="เลือกหมวดหมู่" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {categories.map((category) => (
+                                        <SelectItem key={category} value={category}>
+                                            {category}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* Excerpt */}
+                        <div className="space-y-2">
+                            <Label htmlFor="excerpt">
+                                คำโปรย <span className="text-destructive">*</span>
+                            </Label>
+                            <Textarea
+                                id="excerpt"
+                                value={formData.excerpt}
+                                onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+                                placeholder="สรุปข่าวสาร 1-2 บรรทัด"
+                                rows={3}
+                                required
+                            />
+                        </div>
+
+                        {/* Content */}
+                        <div className="space-y-2">
+                            <Label>
+                                เนื้อหา <span className="text-destructive">*</span>
+                            </Label>
+                            <RichTextEditor
+                                value={formData.content}
+                                onChange={(value) => setFormData({ ...formData, content: value })}
+                                placeholder="เขียนเนื้อหาข่าวสาร..."
+                            />
+                        </div>
+
+                        {/* Cover Image */}
+                        <div className="space-y-2">
+                            <Label>รูปปก</Label>
+                            <ImageUpload
+                                currentImage={formData.cover_image_url}
+                                onUploadComplete={(url) => setFormData({ ...formData, cover_image_url: url })}
+                                bucket="images"
+                                folder="news"
+                            />
+                        </div>
+
+                        {/* Options */}
+                        <div className="flex flex-col gap-4 p-4 bg-secondary rounded-lg">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label>เผยแพร่ทันที</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        ข่าวสารจะแสดงบนหน้าเว็บทันที
+                                    </p>
+                                </div>
+                                <Switch
+                                    checked={formData.is_published}
+                                    onCheckedChange={(checked) => setFormData({ ...formData, is_published: checked })}
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label>ปักหมุด</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        แสดงข่าวนี้เป็นพิเศษด้านบนสุด
+                                    </p>
+                                </div>
+                                <Switch
+                                    checked={formData.is_pinned}
+                                    onCheckedChange={(checked) => setFormData({ ...formData, is_pinned: checked })}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Submit Buttons */}
+                        <div className="flex gap-4 pt-4 border-t">
+                            <Button type="submit" disabled={isSubmitting} className="flex-1">
+                                <Save className="w-4 h-4 mr-2" />
+                                {isSubmitting ? 'กำลังบันทึก...' : news ? 'บันทึกการแก้ไข' : 'สร้างข่าวสาร'}
+                            </Button>
+                            <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+                                <X className="w-4 h-4 mr-2" />
+                                ยกเลิก
+                            </Button>
+                        </div>
+                    </form>
+                </CardContent>
+            </Card>
+        </div>
+    );
+};

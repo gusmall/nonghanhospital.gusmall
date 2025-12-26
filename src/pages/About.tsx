@@ -1,0 +1,161 @@
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import { Target, Eye, Heart, Star, Users, Award, BookOpen, GraduationCap, Building2, History } from 'lucide-react';
+
+const features = [
+  {
+    icon: Target,
+    title: 'วิสัยทัศน์',
+    description: 'เป็นสถานศึกษาชั้นนำที่พัฒนาผู้เรียนให้มีความเป็นเลิศทางวิชาการ มีคุณธรรม และทักษะที่จำเป็นสำหรับศตวรรษที่ 21',
+  },
+  {
+    icon: Eye,
+    title: 'พันธกิจ',
+    description: 'จัดการศึกษาที่มีคุณภาพ พัฒนาหลักสูตรที่ทันสมัย ส่งเสริมการเรียนรู้ตลอดชีวิต และสร้างพลเมืองที่ดีของสังคม',
+  },
+  {
+    icon: Heart,
+    title: 'ค่านิยม',
+    description: 'ความซื่อสัตย์ ความรับผิดชอบ ความเคารพ ความมุ่งมั่น และความร่วมมือ เป็นหลักการที่เราปลูกฝังในทุกกิจกรรม',
+  },
+  {
+    icon: Star,
+    title: 'ความเป็นเลิศ',
+    description: 'มุ่งมั่นสู่ความเป็นเลิศในทุกด้าน ทั้งวิชาการ กีฬา ศิลปะ และการพัฒนาบุคลิกภาพของผู้เรียน',
+  },
+];
+
+const milestones = [
+  { year: '2517', event: 'ก่อตั้งโรงเรียนห้องสื่อครูคอมวิทยาคม' },
+  { year: '2530', event: 'เปิดหลักสูตรวิทยาศาสตร์-คณิตศาสตร์' },
+  { year: '2545', event: 'ได้รับรางวัลโรงเรียนพระราชทาน' },
+  { year: '2555', event: 'เปิดหลักสูตรภาษาต่างประเทศ' },
+  { year: '2565', event: 'เปิดหลักสูตรเทคโนโลยีและ AI' },
+];
+
+const About = () => {
+  return (
+    <div className="min-h-screen">
+      <Navbar />
+      <main className="pt-20">
+        {/* Hero Section */}
+        <section className="bg-primary py-20">
+          <div className="container mx-auto px-4 text-center">
+            <span className="inline-block text-accent font-semibold mb-4">เกี่ยวกับเรา</span>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-primary-foreground mb-6">
+              โรงเรียนห้องสื่อครูคอมวิทยาคม
+            </h1>
+            <p className="text-xl text-primary-foreground/80 max-w-3xl mx-auto">
+              สถาบันการศึกษาชั้นนำระดับมัธยมศึกษา ด้วยประสบการณ์กว่า 50 ปี 
+              ในการพัฒนาเยาวชนไทยให้พร้อมสู่อนาคต
+            </p>
+          </div>
+        </section>
+
+        {/* Vision Mission Section */}
+        <section className="section-padding bg-background">
+          <div className="container mx-auto px-4">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {features.map((feature, index) => (
+                <div
+                  key={index}
+                  className="group bg-card rounded-2xl p-8 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border border-border"
+                >
+                  <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-6 group-hover:bg-primary group-hover:scale-110 transition-all duration-300">
+                    <feature.icon className="w-7 h-7 text-primary group-hover:text-primary-foreground transition-colors" />
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground mb-3">{feature.title}</h3>
+                  <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Stats Section */}
+        <section className="py-16 bg-primary">
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+              {[
+                { icon: History, value: '50+', label: 'ปีแห่งประสบการณ์' },
+                { icon: Users, value: '2,500+', label: 'นักเรียนปัจจุบัน' },
+                { icon: GraduationCap, value: '200+', label: 'บุคลากรคุณภาพ' },
+                { icon: Award, value: '15,000+', label: 'ศิษย์เก่าทั่วประเทศ' },
+              ].map((stat, index) => (
+                <div key={index} className="text-center">
+                  <stat.icon className="w-10 h-10 text-accent mx-auto mb-4" />
+                  <div className="text-3xl md:text-4xl lg:text-5xl font-bold text-accent mb-2">{stat.value}</div>
+                  <div className="text-primary-foreground/80">{stat.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* History Timeline */}
+        <section className="section-padding bg-secondary/30">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-16">
+              <span className="inline-block text-accent font-semibold mb-4">ประวัติความเป็นมา</span>
+              <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
+                เส้นทางแห่งความสำเร็จ
+              </h2>
+            </div>
+
+            <div className="max-w-3xl mx-auto">
+              {milestones.map((milestone, index) => (
+                <div key={index} className="flex gap-6 mb-8 last:mb-0">
+                  <div className="flex-shrink-0 w-24 text-right">
+                    <span className="text-2xl font-bold text-primary">{milestone.year}</span>
+                  </div>
+                  <div className="relative">
+                    <div className="w-4 h-4 rounded-full bg-accent border-4 border-background" />
+                    {index < milestones.length - 1 && (
+                      <div className="absolute top-4 left-1.5 w-1 h-full bg-border" />
+                    )}
+                  </div>
+                  <div className="flex-1 pb-8">
+                    <div className="bg-card rounded-xl p-6 shadow-md border border-border">
+                      <p className="text-foreground">{milestone.event}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Facilities */}
+        <section className="section-padding bg-background">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-16">
+              <span className="inline-block text-accent font-semibold mb-4">สิ่งอำนวยความสะดวก</span>
+              <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
+                สถานที่และอุปกรณ์
+              </h2>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6">
+              {[
+                { icon: Building2, title: 'อาคารเรียน', desc: 'อาคารเรียนทันสมัย 5 หลัง พร้อมห้องเรียนปรับอากาศ' },
+                { icon: BookOpen, title: 'ห้องสมุด', desc: 'ห้องสมุดขนาดใหญ่ หนังสือกว่า 50,000 เล่ม และ e-Library' },
+                { icon: Award, title: 'สนามกีฬา', desc: 'สนามฟุตบอล สระว่ายน้ำ โรงยิม และสนามเทนนิส' },
+              ].map((facility, index) => (
+                <div key={index} className="bg-card rounded-2xl p-8 shadow-md border border-border text-center">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+                    <facility.icon className="w-8 h-8 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground mb-3">{facility.title}</h3>
+                  <p className="text-muted-foreground">{facility.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      </main>
+      <Footer />
+    </div>
+  );
+};
+
+export default About;
