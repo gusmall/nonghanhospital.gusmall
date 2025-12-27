@@ -1,39 +1,92 @@
+import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { Target, Eye, Heart, Star, Users, Award, BookOpen, GraduationCap, Building2, History } from 'lucide-react';
+import { Target, Eye, Heart, Star, Users, Award, BookOpen, GraduationCap, Building2, History, LucideIcon, Dumbbell, Monitor, FlaskConical } from 'lucide-react';
+import { useSchoolSettings } from '@/hooks/useSchoolSettings';
+import { supabase } from '@/integrations/supabase/client';
 
-const features = [
-  {
-    icon: Target,
-    title: 'วิสัยทัศน์',
-    description: 'เป็นสถานศึกษาชั้นนำที่พัฒนาผู้เรียนให้มีความเป็นเลิศทางวิชาการ มีคุณธรรม และทักษะที่จำเป็นสำหรับศตวรรษที่ 21',
-  },
-  {
-    icon: Eye,
-    title: 'พันธกิจ',
-    description: 'จัดการศึกษาที่มีคุณภาพ พัฒนาหลักสูตรที่ทันสมัย ส่งเสริมการเรียนรู้ตลอดชีวิต และสร้างพลเมืองที่ดีของสังคม',
-  },
-  {
-    icon: Heart,
-    title: 'ค่านิยม',
-    description: 'ความซื่อสัตย์ ความรับผิดชอบ ความเคารพ ความมุ่งมั่น และความร่วมมือ เป็นหลักการที่เราปลูกฝังในทุกกิจกรรม',
-  },
-  {
-    icon: Star,
-    title: 'ความเป็นเลิศ',
-    description: 'มุ่งมั่นสู่ความเป็นเลิศในทุกด้าน ทั้งวิชาการ กีฬา ศิลปะ และการพัฒนาบุคลิกภาพของผู้เรียน',
-  },
-];
+interface Milestone {
+  id: string;
+  year: string;
+  event: string;
+}
 
-const milestones = [
-  { year: '2517', event: 'ก่อตั้งโรงเรียนห้องสื่อครูคอมวิทยาคม' },
-  { year: '2530', event: 'เปิดหลักสูตรวิทยาศาสตร์-คณิตศาสตร์' },
-  { year: '2545', event: 'ได้รับรางวัลโรงเรียนพระราชทาน' },
-  { year: '2555', event: 'เปิดหลักสูตรภาษาต่างประเทศ' },
-  { year: '2565', event: 'เปิดหลักสูตรเทคโนโลยีและ AI' },
-];
+interface Facility {
+  id: string;
+  title: string;
+  description: string | null;
+  icon: string;
+}
+
+const iconMap: Record<string, LucideIcon> = {
+  Building2, BookOpen, Award, Dumbbell, Monitor, FlaskConical, GraduationCap, History, Users,
+};
 
 const About = () => {
+  const { settings } = useSchoolSettings();
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [facilities, setFacilities] = useState<Facility[]>([]);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      // Fetch milestones
+      const { data: milestonesData } = await supabase
+        .from('milestones')
+        .select('*')
+        .eq('is_active', true)
+        .order('order_position', { ascending: true });
+
+      if (milestonesData) setMilestones(milestonesData);
+
+      // Fetch facilities
+      const { data: facilitiesData } = await supabase
+        .from('facilities')
+        .select('*')
+        .eq('is_active', true)
+        .order('order_position', { ascending: true });
+
+      if (facilitiesData) setFacilities(facilitiesData);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      // Use defaults if fetch fails
+      setMilestones([
+        { id: '1', year: '2517', event: 'ก่อตั้งโรงเรียน' },
+        { id: '2', year: '2530', event: 'เปิดหลักสูตรวิทย์-คณิต' },
+      ]);
+      setFacilities([
+        { id: '1', title: 'อาคารเรียน', description: 'อาคารเรียนทันสมัย', icon: 'Building2' },
+      ]);
+    }
+  };
+
+  // Build features from settings
+  const features = [
+    {
+      icon: Target,
+      title: 'วิสัยทัศน์',
+      description: settings.school_vision,
+    },
+    {
+      icon: Eye,
+      title: 'พันธกิจ',
+      description: settings.school_mission,
+    },
+    {
+      icon: Heart,
+      title: 'ค่านิยม',
+      description: settings.school_values,
+    },
+    {
+      icon: Star,
+      title: 'ความเป็นเลิศ',
+      description: 'มุ่งมั่นสู่ความเป็นเลิศในทุกด้าน ทั้งวิชาการ กีฬา ศิลปะ และการพัฒนาบุคลิกภาพของผู้เรียน',
+    },
+  ];
+
   return (
     <div className="min-h-screen">
       <Navbar />
@@ -43,11 +96,10 @@ const About = () => {
           <div className="container mx-auto px-4 text-center">
             <span className="inline-block text-accent font-semibold mb-4">เกี่ยวกับเรา</span>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-primary-foreground mb-6">
-              โรงเรียนห้องสื่อครูคอมวิทยาคม
+              {settings.school_name}
             </h1>
             <p className="text-xl text-primary-foreground/80 max-w-3xl mx-auto">
-              สถาบันการศึกษาชั้นนำระดับมัธยมศึกษา ด้วยประสบการณ์กว่า 50 ปี 
-              ในการพัฒนาเยาวชนไทยให้พร้อมสู่อนาคต
+              {settings.school_description}
             </p>
           </div>
         </section>
@@ -77,10 +129,10 @@ const About = () => {
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
               {[
-                { icon: History, value: '50+', label: 'ปีแห่งประสบการณ์' },
-                { icon: Users, value: '2,500+', label: 'นักเรียนปัจจุบัน' },
-                { icon: GraduationCap, value: '200+', label: 'บุคลากรคุณภาพ' },
-                { icon: Award, value: '15,000+', label: 'ศิษย์เก่าทั่วประเทศ' },
+                { icon: History, value: settings.about_stat_1, label: settings.about_stat_1_label },
+                { icon: Users, value: settings.about_stat_2, label: settings.about_stat_2_label },
+                { icon: GraduationCap, value: settings.about_stat_3, label: settings.about_stat_3_label },
+                { icon: Award, value: settings.about_stat_4, label: settings.about_stat_4_label },
               ].map((stat, index) => (
                 <div key={index} className="text-center">
                   <stat.icon className="w-10 h-10 text-accent mx-auto mb-4" />
@@ -136,19 +188,18 @@ const About = () => {
             </div>
 
             <div className="grid md:grid-cols-3 gap-6">
-              {[
-                { icon: Building2, title: 'อาคารเรียน', desc: 'อาคารเรียนทันสมัย 5 หลัง พร้อมห้องเรียนปรับอากาศ' },
-                { icon: BookOpen, title: 'ห้องสมุด', desc: 'ห้องสมุดขนาดใหญ่ หนังสือกว่า 50,000 เล่ม และ e-Library' },
-                { icon: Award, title: 'สนามกีฬา', desc: 'สนามฟุตบอล สระว่ายน้ำ โรงยิม และสนามเทนนิส' },
-              ].map((facility, index) => (
-                <div key={index} className="bg-card rounded-2xl p-8 shadow-md border border-border text-center">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-                    <facility.icon className="w-8 h-8 text-primary" />
+              {facilities.map((facility) => {
+                const IconComponent = iconMap[facility.icon] || Building2;
+                return (
+                  <div key={facility.id} className="bg-card rounded-2xl p-8 shadow-md border border-border text-center">
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+                      <IconComponent className="w-8 h-8 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-bold text-foreground mb-3">{facility.title}</h3>
+                    <p className="text-muted-foreground">{facility.description}</p>
                   </div>
-                  <h3 className="text-xl font-bold text-foreground mb-3">{facility.title}</h3>
-                  <p className="text-muted-foreground">{facility.desc}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>

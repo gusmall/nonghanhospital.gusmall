@@ -1,120 +1,114 @@
+import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { Users, GraduationCap, Trophy, BookOpen, TrendingUp, Star } from 'lucide-react';
+import { Users, GraduationCap, Trophy, BookOpen, TrendingUp, Star, LucideIcon } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
-const studentStats = [
-  { icon: Users, label: 'นักเรียนทั้งหมด', value: '1,250', color: 'text-primary' },
-  { icon: GraduationCap, label: 'ม.ปลาย', value: '650', color: 'text-accent' },
-  { icon: BookOpen, label: 'ม.ต้น', value: '600', color: 'text-green-500' },
-  { icon: Trophy, label: 'นักเรียนเกียรตินิยม', value: '180', color: 'text-purple-500' },
-];
+interface StudentStat {
+  id: string;
+  label: string;
+  value: string;
+  icon: string;
+  color: string;
+}
 
-const gradeData = [
-  {
-    level: 'มัธยมศึกษาปีที่ 1',
-    rooms: 6,
-    students: 210,
-    boys: 105,
-    girls: 105,
-  },
-  {
-    level: 'มัธยมศึกษาปีที่ 2',
-    rooms: 6,
-    students: 200,
-    boys: 98,
-    girls: 102,
-  },
-  {
-    level: 'มัธยมศึกษาปีที่ 3',
-    rooms: 6,
-    students: 190,
-    boys: 95,
-    girls: 95,
-  },
-  {
-    level: 'มัธยมศึกษาปีที่ 4',
-    rooms: 6,
-    students: 220,
-    boys: 110,
-    girls: 110,
-  },
-  {
-    level: 'มัธยมศึกษาปีที่ 5',
-    rooms: 6,
-    students: 215,
-    boys: 108,
-    girls: 107,
-  },
-  {
-    level: 'มัธยมศึกษาปีที่ 6',
-    rooms: 6,
-    students: 215,
-    boys: 107,
-    girls: 108,
-  },
-];
+interface GradeData {
+  id: string;
+  level: string;
+  rooms: number;
+  students: number;
+  boys: number;
+  girls: number;
+}
 
-const achievements = [
-  {
-    title: 'เหรียญทองโอลิมปิกวิชาการ',
-    description: 'นักเรียนได้รับเหรียญทองการแข่งขันคณิตศาสตร์โอลิมปิกระดับชาติ',
-    year: '2567',
-    icon: Trophy,
-  },
-  {
-    title: 'รางวัลชนะเลิศวิทยาศาสตร์',
-    description: 'โครงงานวิทยาศาสตร์ได้รับรางวัลชนะเลิศระดับภาค',
-    year: '2567',
-    icon: Star,
-  },
-  {
-    title: 'ทุนการศึกษาต่อต่างประเทศ',
-    description: 'นักเรียนได้รับทุนเรียนต่อมหาวิทยาลัยชั้นนำในต่างประเทศ',
-    year: '2567',
-    icon: GraduationCap,
-  },
-  {
-    title: 'ผลสอบ O-NET สูงกว่าค่าเฉลี่ย',
-    description: 'ผลสอบ O-NET ทุกวิชาสูงกว่าค่าเฉลี่ยระดับประเทศ',
-    year: '2566',
-    icon: TrendingUp,
-  },
-];
+interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  year: string;
+  category: string;
+}
 
-const activities = [
-  {
-    name: 'ชมรมวิทยาศาสตร์',
-    members: 85,
-    description: 'ทดลองและค้นคว้าทางวิทยาศาสตร์',
-  },
-  {
-    name: 'ชมรมคณิตศาสตร์',
-    members: 70,
-    description: 'พัฒนาทักษะการคิดวิเคราะห์',
-  },
-  {
-    name: 'ชมรมภาษาอังกฤษ',
-    members: 90,
-    description: 'พัฒนาทักษะการสื่อสารภาษาอังกฤษ',
-  },
-  {
-    name: 'ชมรมดนตรี',
-    members: 65,
-    description: 'เรียนรู้และแสดงดนตรีหลากหลายแนว',
-  },
-  {
-    name: 'ชมรมกีฬา',
-    members: 120,
-    description: 'ฝึกฝนกีฬาและส่งเสริมสุขภาพ',
-  },
-  {
-    name: 'ชมรมศิลปะ',
-    members: 55,
-    description: 'สร้างสรรค์ผลงานศิลปะหลากหลายรูปแบบ',
-  },
-];
+interface Activity {
+  id: string;
+  name: string;
+  members: number;
+  description: string;
+}
+
+interface StudentCouncil {
+  id: string;
+  name: string;
+  position: string;
+  class: string | null;
+  initial: string | null;
+  image_url: string | null;
+}
+
+const iconMap: Record<string, LucideIcon> = {
+  Users, GraduationCap, Trophy, BookOpen, TrendingUp, Star,
+};
 
 const Students = () => {
+  const [studentStats, setStudentStats] = useState<StudentStat[]>([]);
+  const [gradeData, setGradeData] = useState<GradeData[]>([]);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [studentCouncil, setStudentCouncil] = useState<StudentCouncil[]>([]);
+
+  useEffect(() => {
+    fetchAllData();
+  }, []);
+
+  const fetchAllData = async () => {
+    try {
+      // Fetch student stats
+      const { data: statsData } = await supabase
+        .from('student_stats')
+        .select('*')
+        .eq('is_active', true)
+        .order('order_position', { ascending: true });
+      if (statsData) setStudentStats(statsData);
+
+      // Fetch grade data
+      const { data: gradeDataResult } = await supabase
+        .from('grade_data')
+        .select('*')
+        .eq('is_active', true)
+        .order('order_position', { ascending: true });
+      if (gradeDataResult) setGradeData(gradeDataResult);
+
+      // Fetch achievements
+      const { data: achievementsData } = await supabase
+        .from('student_achievements')
+        .select('*')
+        .order('order_position', { ascending: true });
+      if (achievementsData) setAchievements(achievementsData);
+
+      // Fetch activities
+      const { data: activitiesData } = await supabase
+        .from('student_activities')
+        .select('*')
+        .order('order_position', { ascending: true });
+      if (activitiesData) setActivities(activitiesData);
+
+      // Fetch student council
+      const { data: councilData } = await supabase
+        .from('student_council')
+        .select('*')
+        .eq('is_active', true)
+        .order('order_position', { ascending: true });
+      if (councilData) setStudentCouncil(councilData);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      // Use defaults if fetch fails
+      setStudentStats([
+        { id: '1', label: 'นักเรียนทั้งหมด', value: '1,250', icon: 'Users', color: 'text-primary' },
+        { id: '2', label: 'ม.ปลาย', value: '650', icon: 'GraduationCap', color: 'text-accent' },
+      ]);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -138,15 +132,18 @@ const Students = () => {
         <section className="py-12 bg-secondary/30">
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {studentStats.map((stat, index) => (
-                <div key={index} className="bg-card rounded-2xl p-6 text-center shadow-md border border-border">
-                  <div className={`w-12 h-12 rounded-full ${stat.color}/10 flex items-center justify-center mx-auto mb-4`}>
-                    <stat.icon className={`w-6 h-6 ${stat.color}`} />
+              {studentStats.map((stat) => {
+                const IconComponent = iconMap[stat.icon] || Users;
+                return (
+                  <div key={stat.id} className="bg-card rounded-2xl p-6 text-center shadow-md border border-border">
+                    <div className={`w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4`}>
+                      <IconComponent className={`w-6 h-6 ${stat.color}`} />
+                    </div>
+                    <div className={`text-3xl font-bold ${stat.color} mb-2`}>{stat.value}</div>
+                    <div className="text-muted-foreground">{stat.label}</div>
                   </div>
-                  <div className={`text-3xl font-bold ${stat.color} mb-2`}>{stat.value}</div>
-                  <div className="text-muted-foreground">{stat.label}</div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
@@ -212,13 +209,13 @@ const Students = () => {
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {achievements.map((achievement, index) => (
+              {achievements.map((achievement) => (
                 <div
-                  key={index}
+                  key={achievement.id}
                   className="bg-card rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 border border-border"
                 >
                   <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-4">
-                    <achievement.icon className="w-6 h-6 text-accent" />
+                    <Trophy className="w-6 h-6 text-accent" />
                   </div>
                   <span className="text-sm text-primary font-semibold">{achievement.year}</span>
                   <h3 className="text-lg font-bold text-foreground mt-1 mb-2">{achievement.title}</h3>
@@ -273,30 +270,20 @@ const Students = () => {
                 ตัวแทนนักเรียนที่ได้รับเลือกตั้งเพื่อทำหน้าที่เป็นสื่อกลางระหว่างนักเรียนและโรงเรียน
               </p>
               <div className="grid md:grid-cols-3 gap-6">
-                <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-2xl p-6 border border-primary-foreground/20">
-                  <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center mx-auto mb-4">
-                    <span className="text-2xl font-bold text-accent-foreground">ป</span>
+                {studentCouncil.map((member) => (
+                  <div key={member.id} className="bg-primary-foreground/10 backdrop-blur-sm rounded-2xl p-6 border border-primary-foreground/20">
+                    {member.image_url ? (
+                      <img src={member.image_url} alt={member.name} className="w-16 h-16 rounded-full object-cover mx-auto mb-4" />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center mx-auto mb-4">
+                        <span className="text-2xl font-bold text-accent-foreground">{member.initial || member.name.charAt(0)}</span>
+                      </div>
+                    )}
+                    <h3 className="text-lg font-bold text-primary-foreground">{member.name}</h3>
+                    <p className="text-accent font-semibold">{member.position}</p>
+                    <p className="text-primary-foreground/70 text-sm mt-2">{member.class}</p>
                   </div>
-                  <h3 className="text-lg font-bold text-primary-foreground">นายประสิทธิ์ เก่งมาก</h3>
-                  <p className="text-accent font-semibold">ประธานสภานักเรียน</p>
-                  <p className="text-primary-foreground/70 text-sm mt-2">ม.6/1</p>
-                </div>
-                <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-2xl p-6 border border-primary-foreground/20">
-                  <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center mx-auto mb-4">
-                    <span className="text-2xl font-bold text-accent-foreground">ส</span>
-                  </div>
-                  <h3 className="text-lg font-bold text-primary-foreground">นางสาวสุดา รักเรียน</h3>
-                  <p className="text-accent font-semibold">รองประธานสภานักเรียน</p>
-                  <p className="text-primary-foreground/70 text-sm mt-2">ม.6/2</p>
-                </div>
-                <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-2xl p-6 border border-primary-foreground/20">
-                  <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center mx-auto mb-4">
-                    <span className="text-2xl font-bold text-accent-foreground">ว</span>
-                  </div>
-                  <h3 className="text-lg font-bold text-primary-foreground">นายวิชัย ใจดี</h3>
-                  <p className="text-accent font-semibold">เลขานุการสภานักเรียน</p>
-                  <p className="text-primary-foreground/70 text-sm mt-2">ม.5/1</p>
-                </div>
+                ))}
               </div>
             </div>
           </div>

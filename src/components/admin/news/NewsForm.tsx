@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Save, X } from 'lucide-react';
+import { ArrowLeft, Save, X, Plus, Trash2, Link as LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,6 +32,7 @@ export const NewsForm = ({ news, onSuccess, onCancel }: NewsFormProps) => {
         cover_image_url: news?.cover_image_url || '',
         is_published: news?.is_published || false,
         is_pinned: news?.is_pinned || false,
+        external_links: news?.external_links || [] as { title: string; url: string }[],
     });
 
     useEffect(() => {
@@ -41,7 +42,7 @@ export const NewsForm = ({ news, onSuccess, onCancel }: NewsFormProps) => {
     const fetchCategories = async () => {
         try {
             const { data, error } = await supabase
-                .from('news_categories')
+                .from('news_categories' as any)
                 .select('name')
                 .order('name');
 
@@ -197,7 +198,81 @@ export const NewsForm = ({ news, onSuccess, onCancel }: NewsFormProps) => {
                                 onUploadComplete={(url) => setFormData({ ...formData, cover_image_url: url })}
                                 bucket="images"
                                 folder="news"
+                                compressionPreset="cover"
                             />
+                        </div>
+
+                        {/* External Links */}
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <Label>ลิ้งค์ภายนอก (ถ้ามี)</Label>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setFormData({
+                                        ...formData,
+                                        external_links: [...(formData.external_links || []), { title: '', url: '' }]
+                                    })}
+                                >
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    เพิ่มลิ้งค์
+                                </Button>
+                            </div>
+
+                            <div className="space-y-3">
+                                {formData.external_links?.map((link, index) => (
+                                    <div key={index} className="flex gap-3 items-start p-3 bg-secondary/30 rounded-lg border">
+                                        <div className="flex-1 space-y-3">
+                                            <div className="grid gap-2">
+                                                <Label className="text-xs text-muted-foreground">ชื่อลิ้งค์ / ปุ่ม</Label>
+                                                <Input
+                                                    value={link.title}
+                                                    onChange={(e) => {
+                                                        const newLinks = [...(formData.external_links || [])];
+                                                        newLinks[index].title = e.target.value;
+                                                        setFormData({ ...formData, external_links: newLinks });
+                                                    }}
+                                                    placeholder="เช่น สมัครลงทะเบียนคลิกที่นี่"
+                                                />
+                                            </div>
+                                            <div className="grid gap-2">
+                                                <Label className="text-xs text-muted-foreground">URL (ต้องขึ้นต้นด้วย http:// หรือ https://)</Label>
+                                                <div className="relative">
+                                                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                                    <Input
+                                                        value={link.url}
+                                                        onChange={(e) => {
+                                                            const newLinks = [...(formData.external_links || [])];
+                                                            newLinks[index].url = e.target.value;
+                                                            setFormData({ ...formData, external_links: newLinks });
+                                                        }}
+                                                        placeholder="https://example.com"
+                                                        className="pl-9"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-destructive hover:text-destructive hover:bg-destructive/10 mt-6"
+                                            onClick={() => {
+                                                const newLinks = formData.external_links.filter((_, i) => i !== index);
+                                                setFormData({ ...formData, external_links: newLinks });
+                                            }}
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                                {(!formData.external_links || formData.external_links.length === 0) && (
+                                    <p className="text-sm text-muted-foreground text-center py-4 border-2 border-dashed rounded-lg">
+                                        ยังไม่มีลิ้งค์ภายนอก
+                                    </p>
+                                )}
+                            </div>
                         </div>
 
                         {/* Options */}

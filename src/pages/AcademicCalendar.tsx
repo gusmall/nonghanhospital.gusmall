@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -7,199 +7,102 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Calendar, Clock, MapPin, BookOpen, GraduationCap, Trophy, Users } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useSchoolSettings } from '@/hooks/useSchoolSettings';
 
 const semesters = [
   { id: '1', label: 'ภาคเรียนที่ 1' },
   { id: '2', label: 'ภาคเรียนที่ 2' },
 ];
 
+// Map database categories to display types
 const eventTypes = {
   academic: { label: 'วิชาการ', color: 'bg-blue-500', icon: BookOpen },
-  ceremony: { label: 'พิธีการ', color: 'bg-purple-500', icon: GraduationCap },
-  activity: { label: 'กิจกรรม', color: 'bg-green-500', icon: Users },
-  exam: { label: 'สอบ', color: 'bg-red-500', icon: Clock },
-  competition: { label: 'การแข่งขัน', color: 'bg-orange-500', icon: Trophy },
+  sports: { label: 'กีฬา', color: 'bg-green-500', icon: Trophy },
+  cultural: { label: 'วัฒนธรรม', color: 'bg-purple-500', icon: GraduationCap },
+  general: { label: 'ทั่วไป', color: 'bg-orange-500', icon: Users },
 };
 
-const calendarEvents = {
-  '1': [
-    {
-      id: 1,
-      title: 'เปิดภาคเรียนที่ 1',
-      date: '16 พฤษภาคม 2568',
-      time: '08:00 น.',
-      location: 'โรงเรียนห้องสื่อครูคอมวิทยาคม',
-      type: 'academic',
-      description: 'วันเปิดภาคเรียนปีการศึกษา 2568',
-    },
-    {
-      id: 2,
-      title: 'ปฐมนิเทศนักเรียนใหม่',
-      date: '17-18 พฤษภาคม 2568',
-      time: '08:00 - 16:00 น.',
-      location: 'หอประชุมโรงเรียน',
-      type: 'ceremony',
-      description: 'การปฐมนิเทศสำหรับนักเรียนชั้น ม.1 และ ม.4 ใหม่',
-    },
-    {
-      id: 3,
-      title: 'พิธีไหว้ครู',
-      date: '13 มิถุนายน 2568',
-      time: '09:00 น.',
-      location: 'หอประชุมโรงเรียน',
-      type: 'ceremony',
-      description: 'พิธีไหว้ครูประจำปีการศึกษา 2568',
-    },
-    {
-      id: 4,
-      title: 'สอบกลางภาค 1/2568',
-      date: '22-26 กรกฎาคม 2568',
-      time: '08:30 - 15:30 น.',
-      location: 'ห้องเรียนประจำ',
-      type: 'exam',
-      description: 'การสอบวัดผลกลางภาคเรียนที่ 1',
-    },
-    {
-      id: 5,
-      title: 'วันแม่แห่งชาติ',
-      date: '9 สิงหาคม 2568',
-      time: '08:00 น.',
-      location: 'หอประชุมโรงเรียน',
-      type: 'ceremony',
-      description: 'กิจกรรมวันแม่แห่งชาติ',
-    },
-    {
-      id: 6,
-      title: 'กีฬาสีภายใน',
-      date: '25-27 สิงหาคม 2568',
-      time: '08:00 - 17:00 น.',
-      location: 'สนามกีฬาโรงเรียน',
-      type: 'activity',
-      description: 'การแข่งขันกีฬาสีประจำปี',
-    },
-    {
-      id: 7,
-      title: 'สอบปลายภาค 1/2568',
-      date: '23-27 กันยายน 2568',
-      time: '08:30 - 15:30 น.',
-      location: 'ห้องเรียนประจำ',
-      type: 'exam',
-      description: 'การสอบวัดผลปลายภาคเรียนที่ 1',
-    },
-    {
-      id: 8,
-      title: 'ปิดภาคเรียนที่ 1',
-      date: '1 ตุลาคม 2568',
-      time: '-',
-      location: '-',
-      type: 'academic',
-      description: 'วันปิดภาคเรียนที่ 1/2568',
-    },
-  ],
-  '2': [
-    {
-      id: 9,
-      title: 'เปิดภาคเรียนที่ 2',
-      date: '1 พฤศจิกายน 2568',
-      time: '08:00 น.',
-      location: 'โรงเรียนห้องสื่อครูคอมวิทยาคม',
-      type: 'academic',
-      description: 'วันเปิดภาคเรียนที่ 2/2568',
-    },
-    {
-      id: 10,
-      title: 'วันลอยกระทง',
-      date: '15 พฤศจิกายน 2568',
-      time: '17:00 น.',
-      location: 'สวนโรงเรียน',
-      type: 'activity',
-      description: 'กิจกรรมวันลอยกระทง',
-    },
-    {
-      id: 11,
-      title: 'วันพ่อแห่งชาติ',
-      date: '4 ธันวาคม 2568',
-      time: '08:00 น.',
-      location: 'หอประชุมโรงเรียน',
-      type: 'ceremony',
-      description: 'กิจกรรมวันพ่อแห่งชาติ',
-    },
-    {
-      id: 12,
-      title: 'การแข่งขันวิชาการระดับเขต',
-      date: '10-12 ธันวาคม 2568',
-      time: '08:00 - 17:00 น.',
-      location: 'โรงเรียนประจำเขต',
-      type: 'competition',
-      description: 'การแข่งขันทักษะวิชาการระดับเขตพื้นที่การศึกษา',
-    },
-    {
-      id: 13,
-      title: 'สอบกลางภาค 2/2568',
-      date: '20-24 มกราคม 2569',
-      time: '08:30 - 15:30 น.',
-      location: 'ห้องเรียนประจำ',
-      type: 'exam',
-      description: 'การสอบวัดผลกลางภาคเรียนที่ 2',
-    },
-    {
-      id: 14,
-      title: 'ค่ายวิชาการ',
-      date: '7-9 กุมภาพันธ์ 2569',
-      time: 'ค้างคืน',
-      location: 'อุทยานการเรียนรู้',
-      type: 'activity',
-      description: 'กิจกรรมค่ายพัฒนาทักษะวิชาการ',
-    },
-    {
-      id: 15,
-      title: 'สอบปลายภาค 2/2568',
-      date: '10-14 มีนาคม 2569',
-      time: '08:30 - 15:30 น.',
-      location: 'ห้องเรียนประจำ',
-      type: 'exam',
-      description: 'การสอบวัดผลปลายภาคเรียนที่ 2',
-    },
-    {
-      id: 16,
-      title: 'พิธีมอบประกาศนียบัตร',
-      date: '25 มีนาคม 2569',
-      time: '09:00 น.',
-      location: 'หอประชุมโรงเรียน',
-      type: 'ceremony',
-      description: 'พิธีมอบประกาศนียบัตรสำหรับนักเรียนชั้น ม.3 และ ม.6',
-    },
-    {
-      id: 17,
-      title: 'ปิดภาคเรียนที่ 2',
-      date: '31 มีนาคม 2569',
-      time: '-',
-      location: '-',
-      type: 'academic',
-      description: 'วันปิดภาคเรียนปีการศึกษา 2568',
-    },
-  ],
-};
+interface Event {
+  id: string;
+  title: string;
+  description: string | null;
+  event_date: string;
+  event_time: string | null;
+  location: string | null;
+  category: string | null;
+}
 
 const AcademicCalendar = () => {
   const [activeSemester, setActiveSemester] = useState('1');
   const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { settings } = useSchoolSettings();
 
-  const events = calendarEvents[activeSemester as keyof typeof calendarEvents];
+  useEffect(() => {
+    fetchEvents();
+  }, []);
+
+  const fetchEvents = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('status', 'published')
+        .order('event_date', { ascending: true });
+
+      if (error) throw error;
+      setEvents(data || []);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Group events by semester based on date
+  const getEventsBySemester = (semester: string) => {
+    const currentYear = new Date().getFullYear();
+
+    return events.filter(event => {
+      const eventDate = new Date(event.event_date);
+      const month = eventDate.getMonth() + 1; // 1-12
+
+      if (semester === '1') {
+        // Semester 1: May (5) - September (9)
+        return month >= 5 && month <= 9;
+      } else {
+        // Semester 2: November (11) - March (3)
+        return month >= 11 || month <= 3;
+      }
+    });
+  };
+
+  const semesterEvents = getEventsBySemester(activeSemester);
   const filteredEvents = selectedType
-    ? events.filter(e => e.type === selectedType)
-    : events;
+    ? semesterEvents.filter(e => e.category === selectedType)
+    : semesterEvents;
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('th-TH', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       {/* Hero Section */}
       <section className="pt-32 pb-16 bg-gradient-to-br from-primary via-primary/90 to-primary/80">
         <div className="container-school text-center">
           <Badge className="mb-4 bg-accent/20 text-accent border-0">ปฏิทินการศึกษา</Badge>
           <h1 className="text-4xl md:text-5xl font-bold text-card mb-4">
-            ปฏิทินการศึกษา 2568
+            ปฏิทินการศึกษา {settings.academic_year}
           </h1>
           <p className="text-card/80 text-lg max-w-2xl mx-auto">
             กำหนดการสำคัญตลอดปีการศึกษาของโรงเรียนห้องสื่อครูคอมวิทยาคม
@@ -246,75 +149,114 @@ const AcademicCalendar = () => {
 
             {semesters.map((sem) => (
               <TabsContent key={sem.id} value={sem.id}>
-                <div className="relative">
-                  {/* Timeline Line */}
-                  <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-border hidden md:block" />
-
-                  {/* Events */}
-                  <div className="space-y-6">
-                    {filteredEvents.map((event, index) => {
-                      const eventType = eventTypes[event.type as keyof typeof eventTypes];
-                      const Icon = eventType.icon;
-                      
-                      return (
-                        <div key={event.id} className="relative flex gap-6">
-                          {/* Timeline Dot */}
-                          <div className="hidden md:flex flex-shrink-0 w-16 items-start justify-center pt-6">
-                            <div className={`w-4 h-4 rounded-full ${eventType.color} ring-4 ring-background`} />
-                          </div>
-
-                          {/* Event Card */}
-                          <Card className="flex-1 hover:shadow-lg transition-shadow">
-                            <CardContent className="p-6">
-                              <div className="flex flex-col md:flex-row md:items-start gap-4">
-                                <div className={`w-12 h-12 rounded-xl ${eventType.color} flex items-center justify-center flex-shrink-0`}>
-                                  <Icon className="w-6 h-6 text-white" />
-                                </div>
-                                <div className="flex-1">
-                                  <div className="flex flex-wrap items-center gap-2 mb-2">
-                                    <Badge variant="secondary" className="text-xs">
-                                      {eventType.label}
-                                    </Badge>
-                                    <span className="text-sm text-muted-foreground">
-                                      {event.date}
-                                    </span>
-                                  </div>
-                                  <h3 className="text-lg font-bold text-foreground mb-2">
-                                    {event.title}
-                                  </h3>
-                                  <p className="text-muted-foreground mb-4">
-                                    {event.description}
-                                  </p>
-                                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                                    {event.time !== '-' && (
-                                      <span className="flex items-center gap-1">
-                                        <Clock className="w-4 h-4" />
-                                        {event.time}
-                                      </span>
-                                    )}
-                                    {event.location !== '-' && (
-                                      <span className="flex items-center gap-1">
-                                        <MapPin className="w-4 h-4" />
-                                        {event.location}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </div>
-                      );
-                    })}
+                {loading ? (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground">กำลังโหลด...</p>
                   </div>
-                </div>
+                ) : filteredEvents.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Calendar className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-xl font-semibold mb-2">ยังไม่มีกิจกรรมในภาคเรียนนี้</h3>
+                    <p className="text-muted-foreground">
+                      โปรดติดตามกิจกรรมใหม่ ๆ ที่จะมีขึ้น
+                    </p>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    {/* Timeline Line */}
+                    <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-border hidden md:block" />
+
+                    {/* Events */}
+                    <div className="space-y-6">
+                      {filteredEvents.map((event) => {
+                        const eventType = eventTypes[event.category as keyof typeof eventTypes] || eventTypes.general;
+                        const Icon = eventType.icon;
+
+                        return (
+                          <div key={event.id} className="relative flex gap-6">
+                            {/* Timeline Dot */}
+                            <div className="hidden md:flex flex-shrink-0 w-16 items-start justify-center pt-6">
+                              <div className={`w-4 h-4 rounded-full ${eventType.color} ring-4 ring-background`} />
+                            </div>
+
+                            {/* Event Card */}
+                            <Card className="flex-1 hover:shadow-lg transition-shadow">
+                              <CardContent className="p-0">
+                                {/* Event Image */}
+                                {event.image_url && (
+                                  <div className="relative h-48 overflow-hidden rounded-t-lg">
+                                    <img
+                                      src={event.image_url}
+                                      alt={event.title}
+                                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300 cursor-pointer"
+                                      onClick={() => window.open(event.image_url!, '_blank')}
+                                    />
+                                  </div>
+                                )}
+
+                                <div className="p-6">
+                                  <div className="flex flex-col md:flex-row md:items-start gap-4">
+                                    <div className={`w-12 h-12 rounded-xl ${eventType.color} flex items-center justify-center flex-shrink-0`}>
+                                      <Icon className="w-6 h-6 text-white" />
+                                    </div>
+                                    <div className="flex-1">
+                                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                                        <Badge variant="secondary" className="text-xs">
+                                          {eventType.label}
+                                        </Badge>
+                                        <span className="text-sm text-muted-foreground">
+                                          {formatDate(event.event_date)}
+                                        </span>
+                                      </div>
+                                      <h3 className="text-lg font-bold text-foreground mb-2">
+                                        {event.title}
+                                      </h3>
+                                      {event.description && (
+                                        <p className="text-muted-foreground mb-4">
+                                          {event.description}
+                                        </p>
+                                      )}
+                                      <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                                        {event.event_time && (
+                                          <span className="flex items-center gap-1">
+                                            <Clock className="w-4 h-4" />
+                                            {event.event_time} น.
+                                          </span>
+                                        )}
+                                        {event.location && (
+                                          <span className="flex items-center gap-1">
+                                            <MapPin className="w-4 h-4" />
+                                            {event.location}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </TabsContent>
             ))}
           </Tabs>
 
           {/* Download Calendar */}
           <div className="text-center mt-12 space-y-4">
-            <Button variant="outline" className="gap-2">
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => {
+                if (settings.academic_calendar_url) {
+                  window.open(settings.academic_calendar_url, '_blank');
+                }
+              }}
+              disabled={!settings.academic_calendar_url}
+            >
               <Calendar className="w-4 h-4" />
               ดาวน์โหลดปฏิทินการศึกษา (PDF)
             </Button>

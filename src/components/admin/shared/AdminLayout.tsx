@@ -16,7 +16,13 @@ import {
     Briefcase,
     UserCog,
     Mail,
+    BookOpen,
+    Palette,
+    HelpCircle,
+    History,
+    Building2,
 } from 'lucide-react';
+import { useSchoolSettings } from '@/hooks/useSchoolSettings';
 
 interface AdminLayoutProps {
     children: ReactNode;
@@ -24,6 +30,9 @@ interface AdminLayoutProps {
 
 const menuItems = [
     { id: 'dashboard', label: 'แดชบอร์ด', icon: LayoutDashboard, path: '/admin/dashboard' },
+    { id: 'settings', label: 'ตั้งค่า', icon: Settings, path: '/admin/dashboard?tab=settings' },
+    { id: 'milestones', label: 'ประวัติโรงเรียน', icon: History, path: '/admin/dashboard?tab=milestones' },
+    { id: 'facilities', label: 'สิ่งอำนวยความสะดวก', icon: Building2, path: '/admin/dashboard?tab=facilities' },
     { id: 'news', label: 'ข่าวสาร', icon: Newspaper, path: '/admin/dashboard?tab=news' },
     { id: 'gallery', label: 'แกลเลอรี่', icon: Image, path: '/admin/dashboard?tab=gallery' },
     { id: 'events', label: 'ปฏิทิน', icon: Calendar, path: '/admin/dashboard?tab=events' },
@@ -31,11 +40,15 @@ const menuItems = [
     { id: 'staff', label: 'ครู/บุคลากร', icon: Briefcase, path: '/admin/dashboard?tab=staff' },
     { id: 'administrators', label: 'ผู้บริหาร', icon: UserCog, path: '/admin/dashboard?tab=administrators' },
     { id: 'admissions', label: 'ใบสมัคร', icon: FileText, path: '/admin/dashboard?tab=admissions' },
-    { id: 'settings', label: 'ตั้งค่า', icon: Settings, path: '/admin/dashboard?tab=settings' },
+    { id: 'messages', label: 'กล่องข้อความ', icon: Mail, path: '/admin/dashboard?tab=messages' },
+    { id: 'curriculum', label: 'หลักสูตร', icon: BookOpen, path: '/admin/dashboard?tab=curriculum' },
+    { id: 'activities', label: 'กิจกรรมเสริม', icon: Palette, path: '/admin/dashboard?tab=activities' },
+    { id: 'faq', label: 'FAQ', icon: HelpCircle, path: '/admin/dashboard?tab=faq' },
 ];
 
 export const AdminLayout = ({ children }: AdminLayoutProps) => {
     const navigate = useNavigate();
+    const { settings } = useSchoolSettings();
     const location = useLocation();
     const searchParams = new URLSearchParams(location.search);
     const activeTab = searchParams.get('tab') || 'dashboard';
@@ -55,7 +68,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
                             <span className="text-accent font-bold">วค</span>
                         </div>
                         <div>
-                            <h1 className="font-bold text-primary text-sm">โรงเรียนห้องสื่อครูคอมวิทยาคม</h1>
+                            <h1 className="font-bold text-primary text-sm">{settings.school_name}</h1>
                             <p className="text-xs text-muted-foreground">ระบบจัดการ</p>
                         </div>
                     </Link>
@@ -69,8 +82,8 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
                                 key={item.id}
                                 to={item.path}
                                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive
-                                        ? 'bg-primary text-primary-foreground'
-                                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                                     }`}
                             >
                                 <item.icon className="w-5 h-5" />

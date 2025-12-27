@@ -1,41 +1,45 @@
 import { useState } from 'react';
-import { MapPin, Phone, Mail, Clock, Send, Facebook, Youtube, Instagram } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, Send, Facebook, Youtube, Instagram, MessageCircle, Link as LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { useSchoolSettings } from '@/hooks/useSchoolSettings';
 
-const contactInfo = [
-  {
-    icon: MapPin,
-    title: 'ที่อยู่',
-    content: '123 ถนนการศึกษา แขวงวิทยาคม เขตพัฒนา กรุงเทพฯ 10XXX',
-  },
-  {
-    icon: Phone,
-    title: 'โทรศัพท์',
-    content: '02-XXX-XXXX, 02-XXX-XXXX',
-  },
-  {
-    icon: Mail,
-    title: 'อีเมล',
-    content: 'info@wittayakom.ac.th',
-  },
-  {
-    icon: Clock,
-    title: 'เวลาทำการ',
-    content: 'จันทร์ - ศุกร์ 07:30 - 16:30 น.',
-  },
-];
 
-const socialLinks = [
-  { icon: Facebook, href: '#', label: 'Facebook' },
-  { icon: Youtube, href: '#', label: 'Youtube' },
-  { icon: Instagram, href: '#', label: 'Instagram' },
-];
 
 const ContactSection = () => {
   const { toast } = useToast();
+  const { settings } = useSchoolSettings();
+
+  const contactInfo = [
+    {
+      icon: MapPin,
+      title: 'ที่อยู่',
+      content: settings.contact_address,
+    },
+    {
+      icon: Phone,
+      title: 'โทรศัพท์',
+      content: settings.contact_phone,
+    },
+    {
+      icon: Mail,
+      title: 'อีเมล',
+      content: settings.contact_email,
+    },
+    {
+      icon: Clock,
+      title: 'เวลาทำการ',
+      content: 'จันทร์ - ศุกร์ 07:30 - 16:30 น.',
+    },
+  ];
+
+  const socialLinks = [
+    { icon: Facebook, href: settings.social_facebook || '#', label: 'Facebook', show: !!settings.social_facebook },
+    { icon: Youtube, href: settings.social_youtube || '#', label: 'Youtube', show: !!settings.social_youtube },
+    { icon: Instagram, href: settings.social_instagram || '#', label: 'Instagram', show: !!settings.social_instagram },
+  ];
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -102,33 +106,69 @@ const ContactSection = () => {
               {/* Social Links */}
               <div className="mt-10 pt-8 border-t border-primary-foreground/20">
                 <h4 className="font-semibold text-primary-foreground mb-4">ติดตามเรา</h4>
-                <div className="flex gap-3">
-                  {socialLinks.map((social, index) => (
-                    <a
-                      key={index}
-                      href={social.href}
-                      aria-label={social.label}
-                      className="w-11 h-11 rounded-xl bg-primary-foreground/10 flex items-center justify-center text-primary-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                    >
-                      <social.icon className="w-5 h-5" />
-                    </a>
-                  ))}
+                <div className="flex gap-3 flex-wrap">
+                  {settings.social_links && settings.social_links.length > 0 ? (
+                    settings.social_links.map((link, index) => {
+                      const getSocialIcon = (platform: string) => {
+                        switch (platform) {
+                          case 'facebook': return Facebook;
+                          case 'youtube': return Youtube;
+                          case 'instagram': return Instagram;
+                          case 'line': return MessageCircle; // Unfortunately Lucide doesn't have Line icon, using MessageCircle
+                          default: return LinkIcon;
+                        }
+                      };
+                      const Icon = getSocialIcon(link.platform);
+
+                      // Assign colors based on platform
+                      const getColor = (platform: string) => {
+                        switch (platform) {
+                          case 'facebook': return 'hover:bg-blue-600';
+                          case 'youtube': return 'hover:bg-red-600';
+                          case 'instagram': return 'hover:bg-pink-600';
+                          case 'line': return 'hover:bg-green-500';
+                          default: return 'hover:bg-accent';
+                        }
+                      }
+
+                      return (
+                        <a
+                          key={index}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={link.platform}
+                          className={`w-11 h-11 rounded-xl bg-primary-foreground/10 flex items-center justify-center text-primary-foreground ${getColor(link.platform)} hover:text-white transition-colors`}
+                        >
+                          <Icon className="w-5 h-5" />
+                        </a>
+                      );
+                    })
+                  ) : (
+                    <p className="text-sm text-primary-foreground/80">ติดตามข้อมูลข่าวสารได้เร็วๆ นี้</p>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Map Placeholder */}
+            {/* Map */}
             <div className="bg-card rounded-2xl overflow-hidden shadow-lg border border-border h-64">
-              <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3875.5089977891457!2d100.49877507498095!3d13.756330986608!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTPCsDQ1JzIyLjgiTiAxMDDCsDMwJzAzLjIiRQ!5e0!3m2!1sth!2sth!4v1234567890123!5m2!1sth!2sth"
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                title="แผนที่โรงเรียนห้องสื่อครูคอมวิทยาคม"
-              />
+              {settings.google_maps_embed ? (
+                <iframe
+                  src={settings.google_maps_embed}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title={`แผนที่${settings.school_name}`}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-muted">
+                  <p className="text-muted-foreground">กรุณาตั้งค่า Google Maps ใน Admin Settings</p>
+                </div>
+              )}
             </div>
           </div>
 

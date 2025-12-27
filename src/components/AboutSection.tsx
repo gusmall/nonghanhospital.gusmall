@@ -1,29 +1,39 @@
 import { Target, Eye, Heart, Star } from 'lucide-react';
-
-const features = [
-  {
-    icon: Target,
-    title: 'วิสัยทัศน์',
-    description: 'เป็นสถานศึกษาชั้นนำที่พัฒนาผู้เรียนให้มีความเป็นเลิศทางวิชาการ มีคุณธรรม และทักษะที่จำเป็นสำหรับศตวรรษที่ 21',
-  },
-  {
-    icon: Eye,
-    title: 'พันธกิจ',
-    description: 'จัดการศึกษาที่มีคุณภาพ พัฒนาหลักสูตรที่ทันสมัย ส่งเสริมการเรียนรู้ตลอดชีวิต และสร้างพลเมืองที่ดีของสังคม',
-  },
-  {
-    icon: Heart,
-    title: 'ค่านิยม',
-    description: 'ความซื่อสัตย์ ความรับผิดชอบ ความเคารพ ความมุ่งมั่น และความร่วมมือ เป็นหลักการที่เราปลูกฝังในทุกกิจกรรม',
-  },
-  {
-    icon: Star,
-    title: 'ความเป็นเลิศ',
-    description: 'มุ่งมั่นสู่ความเป็นเลิศในทุกด้าน ทั้งวิชาการ กีฬา ศิลปะ และการพัฒนาบุคลิกภาพของผู้เรียน',
-  },
-];
+import { useSchoolSettings } from '@/hooks/useSchoolSettings';
 
 const AboutSection = () => {
+  const { settings } = useSchoolSettings();
+
+  const features = [
+    {
+      icon: Target,
+      title: 'วิสัยทัศน์',
+      description: settings.school_vision,
+    },
+    {
+      icon: Eye,
+      title: 'พันธกิจ',
+      description: settings.school_mission,
+    },
+    {
+      icon: Heart,
+      title: 'ค่านิยม',
+      description: settings.school_values,
+    },
+    {
+      icon: Star,
+      title: 'ความเป็นเลิศ',
+      description: 'มุ่งมั่นสู่ความเป็นเลิศในทุกด้าน ทั้งวิชาการ กีฬา ศิลปะ และการพัฒนาบุคลิกภาพของผู้เรียน',
+    },
+  ];
+
+  const aboutStats = [
+    { value: settings.about_stat_1, label: settings.about_stat_1_label },
+    { value: settings.about_stat_2, label: settings.about_stat_2_label },
+    { value: settings.about_stat_3, label: settings.about_stat_3_label },
+    { value: settings.about_stat_4, label: settings.about_stat_4_label },
+  ];
+
   return (
     <section id="about" className="section-padding bg-background">
       <div className="container-school">
@@ -31,11 +41,10 @@ const AboutSection = () => {
         <div className="text-center max-w-2xl mx-auto mb-16">
           <span className="inline-block text-accent font-semibold mb-4">เกี่ยวกับเรา</span>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
-            สถาบันการศึกษาที่<span className="text-primary">ไว้วางใจ</span>
+            {settings.about_title_1}<span className="text-primary">{settings.about_title_2}</span>
           </h2>
           <p className="text-muted-foreground text-lg">
-            ด้วยประสบการณ์กว่า 50 ปี ในการพัฒนาเยาวชนไทย โรงเรียนห้องสื่อครูคอมวิทยาคมมุ่งมั่นสร้างรากฐานที่แข็งแกร่ง
-            เพื่ออนาคตที่สดใสของนักเรียนทุกคน
+            {settings.school_description}
           </p>
         </div>
 
@@ -58,12 +67,7 @@ const AboutSection = () => {
         {/* Stats Section */}
         <div className="mt-20 bg-primary rounded-3xl p-8 md:p-12">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {[
-              { value: '50+', label: 'ปีแห่งประสบการณ์' },
-              { value: '2,500+', label: 'นักเรียนปัจจุบัน' },
-              { value: '200+', label: 'บุคลากรคุณภาพ' },
-              { value: '15,000+', label: 'ศิษย์เก่าทั่วประเทศ' },
-            ].map((stat, index) => (
+            {aboutStats.map((stat, index) => (
               <div key={index} className="text-center">
                 <div className="text-3xl md:text-4xl lg:text-5xl font-bold text-accent mb-2">{stat.value}</div>
                 <div className="text-primary-foreground/80">{stat.label}</div>
@@ -77,3 +81,4 @@ const AboutSection = () => {
 };
 
 export default AboutSection;
+

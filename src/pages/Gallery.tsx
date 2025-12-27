@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -50,7 +50,7 @@ const Gallery = () => {
   const fetchAlbums = async () => {
     try {
       const { data: albumsData, error: albumsError } = await supabase
-        .from('gallery_albums')
+        .from('gallery_albums' as any)
         .select('*')
         .eq('is_published', true)
         .order('event_date', { ascending: false });
@@ -58,9 +58,9 @@ const Gallery = () => {
       if (albumsError) throw albumsError;
 
       const albumsWithPhotos = await Promise.all(
-        (albumsData || []).map(async (album) => {
+        (albumsData || []).map(async (album: any) => {
           const { data: photos } = await supabase
-            .from('gallery_photos')
+            .from('gallery_photos' as any)
             .select('*')
             .eq('album_id', album.id)
             .order('order_position');
@@ -73,9 +73,9 @@ const Gallery = () => {
               ? format(new Date(album.event_date), 'dd MMMM yyyy', { locale: th })
               : format(new Date(album.created_at), 'dd MMMM yyyy', { locale: th }),
             location: album.location,
-            cover_photo_url: album.cover_photo_url || (photos && photos[0]?.photo_url) || null,
+            cover_photo_url: album.cover_photo_url || ((photos as any)?.[0]?.photo_url) || null,
             description: album.description,
-            photos: photos || [],
+            photos: (photos as any[]) || [],
           };
         })
       );
@@ -83,7 +83,7 @@ const Gallery = () => {
       setAlbums(albumsWithPhotos);
 
       const uniqueCategories = Array.from(
-        new Set(albumsData?.map((a) => a.category).filter(Boolean))
+        new Set((albumsData as any[])?.map((a) => a.category).filter(Boolean))
       ) as string[];
       setCategories(['ทั้งหมด', ...uniqueCategories]);
     } catch (error) {
@@ -105,195 +105,205 @@ const Gallery = () => {
     }
   };
 
+  const thumbnailContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollThumbnails = (direction: 'left' | 'right') => {
+    if (thumbnailContainerRef.current) {
+      const scrollAmount = 300;
+      thumbnailContainerRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   const handleNext = () => {
     if (selectedAlbum) {
       setCurrentPhotoIndex((prev) => (prev + 1) % selectedAlbum.photos.length);
+      // Optional: Auto scroll thumbnail to active
     }
   };
 
   const handlePrev = () => {
     if (selectedAlbum) {
-      setCurrentPhotoIndex((prev) =>
-        prev === 0 ? selectedAlbum.photos.length - 1 : prev - 1
-      );
+      setCurrentPhotoIndex((prev) => (prev - 1 + selectedAlbum.photos.length) % selectedAlbum.photos.length);
+      // Optional: Auto scroll thumbnail to active
     }
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
+      <main className="flex-grow container mx-auto px-4 py-8">
+        <h1 className="text-4xl font-bold text-center mb-8 text-primary">คลังภาพกิจกรรม</h1>
 
-      <section className="bg-primary py-20">
-        <div className="container mx-auto px-4 text-center">
-          <span className="inline-block text-accent font-semibold mb-4">แกลเลอรี่รูปภาพ</span>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-primary-foreground mb-6">
-            แกลเลอรี่<span className="text-accent">รูปภาพ</span>
-          </h1>
-          <p className="text-xl text-primary-foreground/80 max-w-3xl mx-auto">
-            ภาพความประทับใจกิจกรรมต่างๆ ของโรงเรียน
-          </p>
+        <div className="flex flex-wrap justify-center gap-2 mb-8">
+          {categories.map((category) => (
+            <Badge
+              key={category}
+              variant={selectedCategory === category ? 'default' : 'outline'}
+              className={`cursor-pointer px-4 py-2 text-base ${selectedCategory === category ? categoryColors[category] || 'bg-primary' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'}`}
+              onClick={() => setSelectedCategory(category)}
+            >
+              {category}
+            </Badge>
+          ))}
         </div>
-      </section>
 
-      <section className="py-8 bg-secondary/30">
-        <div className="container mx-auto px-4">
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {categories.map((category) => (
-              <Button
-                key={category}
-                variant={selectedCategory === category ? 'default' : 'outline'}
-                onClick={() => setSelectedCategory(category)}
-                className="whitespace-nowrap"
-              >
-                {category}
-              </Button>
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="bg-muted rounded-lg shadow-md overflow-hidden animate-pulse h-64"></div>
             ))}
           </div>
-        </div>
-      </section>
-
-      <section className="section-padding bg-background">
-        <div className="container mx-auto px-4">
-          {isLoading ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">กำลังโหลด...</p>
-            </div>
-          ) : filteredAlbums.length === 0 ? (
-            <div className="text-center py-12">
-              <ImageIcon className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">ไม่พบอัลบั้มรูปภาพ</p>
-            </div>
-          ) : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredAlbums.map((album) => (
-                <div
-                  key={album.id}
-                  onClick={() => handleAlbumClick(album)}
-                  className="group bg-card rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border border-border"
-                >
+        ) : filteredAlbums.length === 0 ? (
+          <p className="text-center text-muted-foreground text-lg">ไม่พบอัลบั้มในหมวดหมู่นี้</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {filteredAlbums.map((album) => (
+              <div
+                key={album.id}
+                className="bg-card rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow duration-300 group relative"
+                onClick={() => handleAlbumClick(album)}
+              >
+                <div className="relative w-full h-48 overflow-hidden">
                   {album.cover_photo_url ? (
-                    <div className="aspect-video overflow-hidden">
-                      <img
-                        src={album.cover_photo_url}
-                        alt={album.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                    </div>
+                    <img
+                      src={album.cover_photo_url}
+                      alt={album.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
                   ) : (
-                    <div className="aspect-video bg-gradient-to-br from-primary/20 to-secondary flex items-center justify-center">
-                      <ImageIcon className="w-16 h-16 text-muted-foreground" />
+                    <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground">
+                      <ImageIcon className="w-12 h-12" />
                     </div>
                   )}
-
-                  <div className="p-6">
-                    <div className="flex items-center justify-between mb-3">
-                      {album.category && (
-                        <Badge className={`${categoryColors[album.category] || 'bg-secondary'} text-white`}>
-                          {album.category}
-                        </Badge>
-                      )}
-                      <span className="text-sm text-muted-foreground">
-                        {album.photos.length} รูป
-                      </span>
-                    </div>
-
-                    <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
-                      {album.title}
-                    </h3>
-
-                    {album.description && (
-                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                        {album.description}
-                      </p>
-                    )}
-
-                    <div className="space-y-1 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
-                        {album.date}
-                      </div>
-                      {album.location && (
-                        <div className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4" />
-                          {album.location}
-                        </div>
-                      )}
-                    </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                    <h3 className="text-lg font-semibold text-white">{album.title}</h3>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      <Dialog open={!!selectedAlbum} onOpenChange={() => setSelectedAlbum(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] w-full h-full p-0 flex flex-col">
-          {selectedAlbum && selectedAlbum.photos.length > 0 && (
-            <div className="flex flex-col h-full">
-              {/* Header */}
-              <div className="p-4 border-b flex items-center justify-between shrink-0 bg-card/50">
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-lg truncate text-foreground">{selectedAlbum.title}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    รูปที่ {currentPhotoIndex + 1} / {selectedAlbum.photos.length}
-                  </p>
+                <div className="p-4">
+                  <h3 className="text-lg font-semibold mb-2">{album.title}</h3>
+                  {album.category && (
+                    <Badge className={`mb-2 ${categoryColors[album.category] || 'bg-gray-500'}`}>
+                      {album.category}
+                    </Badge>
+                  )}
+                  <div className="flex items-center text-sm text-muted-foreground mt-2">
+                    <Calendar className="w-4 h-4 mr-1" />
+                    <span>{album.date}</span>
+                  </div>
+                  {album.location && (
+                    <div className="flex items-center text-sm text-muted-foreground mt-1">
+                      <MapPin className="w-4 h-4 mr-1" />
+                      <span>{album.location}</span>
+                    </div>
+                  )}
                 </div>
               </div>
+            ))}
+          </div>
+        )}
+      </main>
 
-              {/* Image area */}
-              <div className="flex-1 relative flex items-center justify-center bg-black/5 overflow-hidden">
+      <Dialog open={!!selectedAlbum} onOpenChange={() => setSelectedAlbum(null)}>
+        <DialogContent className="max-w-7xl w-[95vw] h-[90vh] p-0 flex flex-col bg-black/50 backdrop-blur-2xl border border-white/10 shadow-2xl rounded-2xl overflow-hidden [&>button]:hidden focus:outline-none">
+          {selectedAlbum && selectedAlbum.photos.length > 0 && (
+            <div className="flex flex-col h-full relative">
+              {/* Header - Floating Glass Strip */}
+              <div className="absolute top-0 left-0 right-0 p-4 z-50 flex items-center justify-between pointer-events-none">
+                <div className="flex-1 min-w-0 pointer-events-auto bg-black/40 backdrop-blur-md px-6 py-2 rounded-full inline-block mr-auto border border-white/10 shadow-lg animate-in slide-in-from-top-4 duration-500">
+                  <h3 className="font-bold text-lg truncate text-white">{selectedAlbum.title}</h3>
+                  <p className="text-xs text-white/70 uppercase tracking-wider">
+                    PHOTO {currentPhotoIndex + 1} OF {selectedAlbum.photos.length}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md pointer-events-auto shadow-lg border border-white/10 w-10 h-10 transition-transform hover:rotate-90 duration-300"
+                  onClick={() => setSelectedAlbum(null)}
+                >
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+
+              {/* Main Stage - Image Area */}
+              <div className="flex-1 relative flex items-center justify-center overflow-hidden bg-gradient-to-b from-black/50 via-transparent to-black/50">
+                <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
                 <img
                   key={currentPhotoIndex}
                   src={selectedAlbum.photos[currentPhotoIndex].photo_url}
                   alt={selectedAlbum.photos[currentPhotoIndex].caption || `รูปที่ ${currentPhotoIndex + 1}`}
-                  className="max-w-full max-h-full object-contain"
+                  className="max-w-full max-h-full object-contain p-4 sm:p-12 transition-all duration-500 animate-in zoom-in-95"
                 />
-                {/* Navigation */}
+
+                {/* Navigation Arrows - Big & Floating */}
                 {selectedAlbum.photos.length > 1 && (
                   <>
                     <Button
-                      variant="secondary"
+                      variant="ghost"
                       size="icon"
-                      className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full z-10"
-                      onClick={handlePrev}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full z-10 w-14 h-14 bg-black/20 hover:bg-white/10 text-white/80 hover:text-white backdrop-blur-md border border-white/5 transition-all duration-300 hover:scale-110 active:scale-95 group"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePrev();
+                      }}
                     >
-                      <ChevronLeft className="w-5 h-5" />
+                      <ChevronLeft className="w-8 h-8 group-hover:-translate-x-1 transition-transform" />
                     </Button>
                     <Button
-                      variant="secondary"
+                      variant="ghost"
                       size="icon"
-                      className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full z-10"
-                      onClick={handleNext}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full z-10 w-14 h-14 bg-black/20 hover:bg-white/10 text-white/80 hover:text-white backdrop-blur-md border border-white/5 transition-all duration-300 hover:scale-110 active:scale-95 group"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleNext();
+                      }}
                     >
-                      <ChevronRight className="w-5 h-5" />
+                      <ChevronRight className="w-8 h-8 group-hover:translate-x-1 transition-transform" />
                     </Button>
                   </>
                 )}
               </div>
 
-              {/* Caption */}
-              {selectedAlbum.photos[currentPhotoIndex].caption && (
-                <div className="p-3 border-t shrink-0 bg-card/30">
-                  <p className="text-center text-sm text-muted-foreground line-clamp-2">
-                    {selectedAlbum.photos[currentPhotoIndex].caption}
-                  </p>
-                </div>
-              )}
+              {/* Footer - Caption & Thumbnails */}
+              <div className="shrink-0 bg-black/60 backdrop-blur-xl border-t border-white/5 pb-6 pt-4 px-6">
 
-              {/* Thumbnails */}
-              {selectedAlbum.photos.length > 1 && (
-                <div className="p-4 border-t shrink-0 bg-gradient-to-r from-card/30 via-card/50 to-card/30">
-                  <div className="relative">
-                    <div className="overflow-x-auto scroll-smooth scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent hover:scrollbar-thumb-primary/40">
-                      <div className="flex gap-3 pb-2">
+                {/* Caption - Elegant Typography */}
+                {selectedAlbum.photos[currentPhotoIndex].caption && (
+                  <div className="mb-4 text-center max-w-4xl mx-auto">
+                    <p className="text-base text-white/90 font-light tracking-wide leading-relaxed">
+                      "{selectedAlbum.photos[currentPhotoIndex].caption}"
+                    </p>
+                  </div>
+                )}
+
+                {/* Thumbnails - Glass Strip */}
+                {selectedAlbum.photos.length > 1 && (
+                  <div className="relative group max-w-4xl mx-auto flex items-center justify-center gap-4">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-10 w-10 text-white/50 hover:text-white transition-colors"
+                      onClick={() => scrollThumbnails('left')}
+                    >
+                      <ChevronLeft className="w-6 h-6" />
+                    </Button>
+
+                    <div
+                      ref={thumbnailContainerRef}
+                      className="overflow-x-auto scroll-smooth scrollbar-hide py-2 px-4 rounded-xl bg-white/5 border border-white/5"
+                      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                    >
+                      <div className="flex gap-3 min-w-max">
                         {selectedAlbum.photos.map((photo, idx) => (
                           <button
                             key={photo.id}
                             onClick={() => setCurrentPhotoIndex(idx)}
-                            className={`flex-shrink-0 h-20 aspect-video rounded-lg overflow-hidden border-2 transition-all duration-300 ${idx === currentPhotoIndex
-                              ? 'border-primary shadow-lg shadow-primary/30 scale-105 ring-2 ring-primary/20'
-                              : 'border-border/50 hover:border-primary/70 opacity-70 hover:opacity-100 hover:scale-105 hover:shadow-md'
+                            className={`flex-shrink-0 w-20 h-14 rounded-md overflow-hidden transition-all duration-300 relative ${idx === currentPhotoIndex
+                              ? 'ring-2 ring-white scale-105 shadow-lg opacity-100'
+                              : 'opacity-40 hover:opacity-80 hover:scale-105 grayscale hover:grayscale-0'
                               }`}
                           >
                             <img
@@ -301,13 +311,24 @@ const Gallery = () => {
                               alt={`รูปที่ ${idx + 1}`}
                               className="w-full h-full object-cover"
                             />
+                            {/* Overlay for inactive */}
+                            {idx !== currentPhotoIndex && <div className="absolute inset-0 bg-black/20" />}
                           </button>
                         ))}
                       </div>
                     </div>
+
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-10 w-10 text-white/50 hover:text-white transition-colors"
+                      onClick={() => scrollThumbnails('right')}
+                    >
+                      <ChevronRight className="w-6 h-6" />
+                    </Button>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
         </DialogContent>

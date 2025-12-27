@@ -1,37 +1,64 @@
+import { useState, useEffect } from 'react';
 import { Mail, Phone } from 'lucide-react';
+import { useSchoolSettings } from '@/hooks/useSchoolSettings';
+import { supabase } from '@/integrations/supabase/client';
 
-const administrators = [
-  {
-    name: 'ดร.สมศักดิ์ วิทยาการ',
-    position: 'ผู้อำนวยการโรงเรียน',
-    education: 'ปริญญาเอก บริหารการศึกษา',
-    quote: 'การศึกษาคือกุญแจสู่อนาคตที่สดใส',
-    color: 'from-primary to-navy-light',
-  },
-  {
-    name: 'นางสาวประภา สุขสวัสดิ์',
-    position: 'รองผู้อำนวยการฝ่ายวิชาการ',
-    education: 'ปริญญาโท หลักสูตรและการสอน',
-    quote: 'มุ่งมั่นพัฒนาคุณภาพการเรียนการสอน',
-    color: 'from-accent to-gold-light',
-  },
-  {
-    name: 'นายวิชัย บุญมี',
-    position: 'รองผู้อำนวยการฝ่ายบริหาร',
-    education: 'ปริญญาโท บริหารธุรกิจ',
-    quote: 'บริหารด้วยความโปร่งใสและมีประสิทธิภาพ',
-    color: 'from-green-500 to-green-400',
-  },
-  {
-    name: 'นางรัชนี แสงทอง',
-    position: 'รองผู้อำนวยการฝ่ายกิจการนักเรียน',
-    education: 'ปริญญาโท จิตวิทยาการศึกษา',
-    quote: 'ดูแลนักเรียนด้วยหัวใจ',
-    color: 'from-purple-500 to-purple-400',
-  },
+interface Administrator {
+  id: string;
+  name: string;
+  position: string;
+  education: string;
+  quote: string;
+  photo_url: string;
+  order_position: number;
+}
+
+const colorPalette = [
+  'from-primary to-navy-light',
+  'from-accent to-gold-light',
+  'from-green-500 to-green-400',
+  'from-purple-500 to-purple-400',
+  'from-blue-500 to-blue-400',
+  'from-orange-500 to-orange-400',
 ];
 
 const AdministratorsSection = () => {
+  const { settings } = useSchoolSettings();
+  const [administrators, setAdministrators] = useState<Administrator[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAdministrators();
+  }, []);
+
+  const fetchAdministrators = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('administrators')
+        .select('*')
+        .order('order_position', { ascending: true });
+
+      if (error) throw error;
+      setAdministrators(data || []);
+    } catch (error) {
+      console.error('Error fetching administrators:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <section id="administrators" className="section-padding bg-secondary/30">
+        <div className="container-school">
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">กำลังโหลด...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section id="administrators" className="section-padding bg-secondary/30">
       <div className="container-school">
@@ -50,26 +77,38 @@ const AdministratorsSection = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {administrators.map((admin, index) => (
             <div
-              key={index}
+              key={admin.id}
               className="group bg-card rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-border"
             >
               {/* Avatar */}
-              <div className={`h-48 bg-gradient-to-br ${admin.color} relative flex items-center justify-center`}>
-                <div className="w-28 h-28 rounded-full bg-card/20 backdrop-blur-sm flex items-center justify-center border-4 border-card/50">
-                  <span className="text-4xl font-bold text-card">
-                    {admin.name.charAt(0)}
-                  </span>
-                </div>
+              <div className={`h-48 bg-gradient-to-br ${colorPalette[index % colorPalette.length]} relative flex items-center justify-center`}>
+                {admin.photo_url ? (
+                  <img
+                    src={admin.photo_url}
+                    alt={admin.name}
+                    className="w-28 h-28 rounded-full object-cover border-4 border-card/50"
+                  />
+                ) : (
+                  <div className="w-28 h-28 rounded-full bg-card/20 backdrop-blur-sm flex items-center justify-center border-4 border-card/50">
+                    <span className="text-4xl font-bold text-card">
+                      {admin.name.charAt(0)}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Content */}
               <div className="p-6 text-center">
                 <h3 className="text-lg font-bold text-foreground mb-1">{admin.name}</h3>
                 <p className="text-accent font-medium mb-2">{admin.position}</p>
-                <p className="text-sm text-muted-foreground mb-4">{admin.education}</p>
-                <blockquote className="text-sm text-muted-foreground italic border-l-2 border-accent pl-3 text-left">
-                  "{admin.quote}"
-                </blockquote>
+                {admin.education && (
+                  <p className="text-sm text-muted-foreground mb-4">{admin.education}</p>
+                )}
+                {admin.quote && (
+                  <blockquote className="text-sm text-muted-foreground italic border-l-2 border-accent pl-3 text-left">
+                    "{admin.quote}"
+                  </blockquote>
+                )}
               </div>
             </div>
           ))}
@@ -84,14 +123,14 @@ const AdministratorsSection = () => {
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
               <a
-                href="tel:+66-2-XXX-XXXX"
+                href={`tel:${settings.contact_phone}`}
                 className="inline-flex items-center gap-3 bg-accent text-accent-foreground px-6 py-3 rounded-xl font-semibold hover:bg-accent/90 transition-colors"
               >
                 <Phone className="w-5 h-5" />
-                02-XXX-XXXX
+                {settings.contact_phone}
               </a>
               <a
-                href="mailto:admin@wittayakom.ac.th"
+                href={`mailto:${settings.contact_email}`}
                 className="inline-flex items-center gap-3 bg-primary-foreground/10 text-primary-foreground px-6 py-3 rounded-xl font-semibold hover:bg-primary-foreground/20 transition-colors border border-primary-foreground/20"
               >
                 <Mail className="w-5 h-5" />
@@ -106,3 +145,4 @@ const AdministratorsSection = () => {
 };
 
 export default AdministratorsSection;
+

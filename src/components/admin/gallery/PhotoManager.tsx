@@ -7,6 +7,8 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ConfirmDialog } from '../shared/ConfirmDialog';
+import { deleteStorageImage } from '@/utils/storageUtils';
+import { compressImage, compressionPresets } from '@/utils/imageUtils';
 import type { Album } from './GalleryManagement';
 
 interface Photo {
@@ -83,15 +85,16 @@ export const PhotoManager = ({ album, onBack }: PhotoManagerProps) => {
                     continue;
                 }
 
-                // Upload to Supabase Storage
-                const fileExt = file.name.split('.').pop();
-                const fileName = `gallery/${album.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+                // Compress image before upload
+                const compressedBlob = await compressImage(file, compressionPresets.gallery);
+                const fileName = `gallery/${album.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.webp`;
 
                 const { data: uploadData, error: uploadError } = await supabase.storage
                     .from('images')
-                    .upload(fileName, file, {
+                    .upload(fileName, compressedBlob, {
                         cacheControl: '3600',
                         upsert: false,
+                        contentType: 'image/webp',
                     });
 
                 if (uploadError) throw uploadError;
@@ -154,15 +157,8 @@ export const PhotoManager = ({ album, onBack }: PhotoManagerProps) => {
 
             if (dbError) throw dbError;
 
-            // Try to delete from storage (optional, might fail if URL format is different)
-            try {
-                const urlPath = photo.photo_url.split('/storage/v1/object/public/images/')[1];
-                if (urlPath) {
-                    await supabase.storage.from('images').remove([urlPath]);
-                }
-            } catch (storageError) {
-                console.warn('Could not delete from storage:', storageError);
-            }
+            // Delete from storage
+            await deleteStorageImage(photo.photo_url);
 
             toast({
                 title: 'ลบสำเร็จ',

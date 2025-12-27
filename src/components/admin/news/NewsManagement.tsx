@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { NewsForm } from './NewsForm';
 import { NewsList } from './NewsList';
+import { deleteStorageImage } from '@/utils/storageUtils';
 
 export interface NewsItem {
     id: string;
@@ -21,6 +22,7 @@ export interface NewsItem {
     published_at: string | null;
     sort_order: number;
     views: number;
+    external_links: { title: string; url: string }[] | null;
     created_at: string;
     updated_at: string;
 }
@@ -53,7 +55,7 @@ export const NewsManagement = () => {
                 .order('sort_order', { ascending: true });
 
             if (error) throw error;
-            setNews(data || []);
+            setNews((data as any[]) || []);
         } catch (error: any) {
             toast({
                 title: 'เกิดข้อผิดพลาด',
@@ -68,7 +70,7 @@ export const NewsManagement = () => {
     const fetchCategories = async () => {
         try {
             const { data, error } = await supabase
-                .from('news_categories')
+                .from('news_categories' as any)
                 .select('name')
                 .order('name');
 
@@ -99,6 +101,12 @@ export const NewsManagement = () => {
 
     const handleDelete = async (id: string) => {
         try {
+            // Get news item to delete image from storage
+            const newsItem = news.find(n => n.id === id);
+            if (newsItem?.cover_image_url) {
+                await deleteStorageImage(newsItem.cover_image_url);
+            }
+
             const { error } = await supabase.from('news').delete().eq('id', id);
 
             if (error) throw error;
@@ -156,7 +164,7 @@ export const NewsManagement = () => {
             for (const update of updates) {
                 await supabase
                     .from('news')
-                    .update({ sort_order: update.sort_order })
+                    .update({ sort_order: update.sort_order } as any)
                     .eq('id', update.id);
             }
 

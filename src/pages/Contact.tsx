@@ -1,59 +1,25 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { MapPin, Phone, Mail, Clock, Send, Facebook, Youtube, Instagram, MessageCircle } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, Send, Facebook, Youtube, Instagram, MessageCircle, Link as LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { useSchoolSettings } from '@/hooks/useSchoolSettings';
+import { supabase } from '@/integrations/supabase/client';
 
-const contactInfo = [
-  {
-    icon: MapPin,
-    title: 'ที่อยู่',
-    content: '123 ถนนการศึกษา แขวงวิทยาคม เขตพัฒนา กรุงเทพฯ 10XXX',
-  },
-  {
-    icon: Phone,
-    title: 'โทรศัพท์',
-    content: '02-XXX-XXXX, 02-XXX-XXXX',
-  },
-  {
-    icon: Mail,
-    title: 'อีเมล',
-    content: 'info@wittayakom.ac.th',
-  },
-  {
-    icon: Clock,
-    title: 'เวลาทำการ',
-    content: 'จันทร์ - ศุกร์ 07:30 - 16:30 น.',
-  },
-];
+interface FaqItem {
+  id: string;
+  question: string;
+  answer: string;
+}
 
-const socialLinks = [
-  { icon: Facebook, href: '#', label: 'Facebook', color: 'hover:bg-blue-600' },
-  { icon: Youtube, href: '#', label: 'Youtube', color: 'hover:bg-red-600' },
-  { icon: Instagram, href: '#', label: 'Instagram', color: 'hover:bg-pink-600' },
-  { icon: MessageCircle, href: '#', label: 'Line', color: 'hover:bg-green-500' },
-];
-
-const faqItems = [
-  {
-    question: 'ค่าธรรมเนียมการศึกษาเท่าไหร่?',
-    answer: 'ค่าธรรมเนียมการศึกษาต่อภาคเรียน ม.ต้น 15,000 บาท และ ม.ปลาย 18,000 บาท รวมค่าอุปกรณ์การเรียน',
-  },
-  {
-    question: 'มีรถรับส่งนักเรียนหรือไม่?',
-    answer: 'มีบริการรถรับส่งนักเรียน ครอบคลุมพื้นที่กรุงเทพฯ และปริมณฑล สอบถามเส้นทางได้ที่ 02-XXX-XXXX',
-  },
-  {
-    question: 'เปิดรับสมัครนักเรียนใหม่เมื่อไหร่?',
-    answer: 'เปิดรับสมัครนักเรียนใหม่ทุกปี ช่วงเดือนกุมภาพันธ์ - มีนาคม สำหรับปีการศึกษาถัดไป',
-  },
-];
 
 const Contact = () => {
   const { toast } = useToast();
+  const { settings } = useSchoolSettings();
+  const [faqItems, setFaqItems] = useState<FaqItem[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -62,6 +28,47 @@ const Contact = () => {
     message: '',
   });
 
+  // Build contact info from settings
+  const contactInfo = [
+    { icon: MapPin, title: 'ที่อยู่', content: settings.contact_address || 'ไม่ได้ระบุ' },
+    { icon: Phone, title: 'โทรศัพท์', content: settings.contact_phone || 'ไม่ได้ระบุ' },
+    { icon: Mail, title: 'อีเมล', content: settings.contact_email || 'ไม่ได้ระบุ' },
+    { icon: Clock, title: 'เวลาทำการ', content: settings.contact_hours || 'จันทร์ - ศุกร์ 07:30 - 16:30 น.' },
+  ];
+
+  // Build social links from settings
+  const socialLinks = [
+    { icon: Facebook, href: settings.social_facebook || '#', label: 'Facebook', color: 'hover:bg-blue-600' },
+    { icon: Youtube, href: settings.social_youtube || '#', label: 'Youtube', color: 'hover:bg-red-600' },
+    { icon: Instagram, href: settings.social_instagram || '#', label: 'Instagram', color: 'hover:bg-pink-600' },
+    { icon: MessageCircle, href: settings.social_line || '#', label: 'Line', color: 'hover:bg-green-500' },
+  ].filter(link => link.href && link.href !== '#');
+
+  useEffect(() => {
+    fetchFaq();
+  }, []);
+
+  const fetchFaq = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('faq')
+        .select('*')
+        .eq('is_active', true)
+        .order('order_position', { ascending: true });
+
+      if (error) throw error;
+      setFaqItems(data || []);
+    } catch (error) {
+      console.error('Error fetching FAQ:', error);
+      // Use default FAQ if table doesn't exist yet
+      setFaqItems([
+        { id: '1', question: 'ค่าธรรมเนียมการศึกษาเท่าไหร่?', answer: 'ค่าธรรมเนียมการศึกษาต่อภาคเรียน ม.ต้น 15,000 บาท และ ม.ปลาย 18,000 บาท' },
+        { id: '2', question: 'มีรถรับส่งนักเรียนหรือไม่?', answer: 'มีบริการรถรับส่งนักเรียน ครอบคลุมพื้นที่กรุงเทพฯ และปริมณฑล' },
+        { id: '3', question: 'เปิดรับสมัครนักเรียนใหม่เมื่อไหร่?', answer: 'เปิดรับสมัครนักเรียนใหม่ทุกปี ช่วงเดือนกุมภาพันธ์ - มีนาคม' },
+      ]);
+    }
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData((prev) => ({
       ...prev,
@@ -69,19 +76,42 @@ const Contact = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: 'ส่งข้อความสำเร็จ',
-      description: 'เราได้รับข้อความของคุณแล้ว จะติดต่อกลับโดยเร็วที่สุด',
-    });
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      subject: '',
-      message: '',
-    });
+
+    try {
+      const { error } = await supabase
+        .from('contact_messages' as any)
+        .insert([{
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          subject: formData.subject,
+          message: formData.message,
+        }]);
+
+      if (error) throw error;
+
+      toast({
+        title: 'ส่งข้อความสำเร็จ',
+        description: 'เราได้รับข้อความของคุณแล้ว จะติดต่อกลับโดยเร็วที่สุด',
+      });
+
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        subject: '',
+        message: '',
+      });
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({
+        variant: 'destructive',
+        title: 'ส่งข้อความไม่สำเร็จ',
+        description: 'กรุณาลองใหม่อีกครั้งในภายหลัง',
+      });
+    }
   };
 
   return (
@@ -218,32 +248,69 @@ const Contact = () => {
               <div className="space-y-8">
                 {/* Map */}
                 <div className="bg-card rounded-2xl overflow-hidden shadow-lg border border-border h-80">
-                  <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3875.5089977891457!2d100.49877507498095!3d13.756330986608!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTPCsDQ1JzIyLjgiTiAxMDDCsDMwJzAzLjIiRQ!5e0!3m2!1sth!2sth!4v1234567890123!5m2!1sth!2sth"
-                    width="100%"
-                    height="100%"
-                    style={{ border: 0 }}
-                    allowFullScreen
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    title="แผนที่โรงเรียนห้องสื่อครูคอมวิทยาคม"
-                  />
+                  {settings.google_maps_embed ? (
+                    <iframe
+                      src={settings.google_maps_embed}
+                      width="100%"
+                      height="100%"
+                      style={{ border: 0 }}
+                      allowFullScreen
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      title="แผนที่โรงเรียน"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-muted">
+                      <p className="text-muted-foreground">กรุณาตั้งค่า Google Maps ใน Admin Settings</p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Social Links */}
                 <div className="bg-primary rounded-2xl p-8">
                   <h3 className="text-xl font-bold text-primary-foreground mb-6">ติดตามเราผ่านโซเชียลมีเดีย</h3>
-                  <div className="flex gap-4">
-                    {socialLinks.map((social, index) => (
-                      <a
-                        key={index}
-                        href={social.href}
-                        aria-label={social.label}
-                        className={`w-14 h-14 rounded-xl bg-primary-foreground/10 flex items-center justify-center text-primary-foreground ${social.color} transition-colors`}
-                      >
-                        <social.icon className="w-6 h-6" />
-                      </a>
-                    ))}
+                  <div className="flex gap-4 flex-wrap">
+                    {settings.social_links && settings.social_links.length > 0 ? (
+                      settings.social_links.map((link, index) => {
+                        const getSocialIcon = (platform: string) => {
+                          switch (platform) {
+                            case 'facebook': return Facebook;
+                            case 'youtube': return Youtube;
+                            case 'instagram': return Instagram;
+                            case 'line': return MessageCircle;
+                            case 'twitter': return MessageCircle; // Use generic for now or import Twitter
+                            case 'tiktok': return MessageCircle; // Use generic
+                            default: return LinkIcon;
+                          }
+                        };
+                        const Icon = getSocialIcon(link.platform);
+
+                        // Assign colors based on platform
+                        const getColor = (platform: string) => {
+                          switch (platform) {
+                            case 'facebook': return 'hover:bg-blue-600';
+                            case 'youtube': return 'hover:bg-red-600';
+                            case 'instagram': return 'hover:bg-pink-600';
+                            case 'line': return 'hover:bg-green-500';
+                            default: return 'hover:bg-primary-foreground/20';
+                          }
+                        }
+
+                        return (
+                          <a
+                            key={index}
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`w-14 h-14 rounded-xl bg-primary-foreground/10 flex items-center justify-center text-primary-foreground ${getColor(link.platform)} transition-colors`}
+                          >
+                            <Icon className="w-6 h-6" />
+                          </a>
+                        );
+                      })
+                    ) : (
+                      <p className="text-primary-foreground/80">ยังไม่มีข้อมูลโซเชียลมีเดีย</p>
+                    )}
                   </div>
                 </div>
 

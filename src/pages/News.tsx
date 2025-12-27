@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { Calendar, Eye, Search, Filter, X } from 'lucide-react';
+import { Calendar, Eye, Search, Filter, X, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,7 @@ interface NewsItem {
   content: string;
   cover_image_url?: string;
   is_pinned: boolean;
+  external_links?: { title: string; url: string }[];
 }
 
 const categoryColors: Record<string, string> = {
@@ -52,7 +53,7 @@ const News = () => {
 
       if (error) throw error;
 
-      const formattedNews: NewsItem[] = (data || []).map((item) => ({
+      const formattedNews: NewsItem[] = ((data as any[]) || []).map((item) => ({
         id: item.id,
         category: item.category,
         title: item.title,
@@ -64,6 +65,7 @@ const News = () => {
         content: item.content || '',
         cover_image_url: item.cover_image_url || undefined,
         is_pinned: item.is_pinned || false,
+        external_links: item.external_links || [],
       }));
 
       setAllNews(formattedNews);
@@ -77,7 +79,7 @@ const News = () => {
   const fetchCategories = async () => {
     try {
       const { data, error } = await supabase
-        .from('news_categories')
+        .from('news_categories' as any)
         .select('name')
         .order('name');
 
@@ -95,10 +97,7 @@ const News = () => {
     setSelectedNews(news);
     // Increment view count
     try {
-      await supabase
-        .from('news')
-        .update({ views: news.views + 1 })
-        .eq('id', news.id);
+      await (supabase as any).rpc('increment_news_view', { news_id: news.id });
     } catch (error) {
       console.error('Error updating views:', error);
     }
@@ -154,9 +153,35 @@ const News = () => {
             )}
 
             <div
-              className="prose prose-lg max-w-none text-foreground"
+              className="prose prose-lg max-w-none text-foreground mb-8"
               dangerouslySetInnerHTML={{ __html: selectedNews.content }}
             />
+
+            {/* External Links */}
+            {selectedNews.external_links && selectedNews.external_links.length > 0 && (
+              <div className="flex flex-col gap-4 p-6 bg-secondary/30 rounded-xl border border-secondary">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <span className="w-1 h-6 bg-primary rounded-full"></span>
+                  ลิ้งค์ที่เกี่ยวข้อง
+                </h3>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {selectedNews.external_links.map((link, idx) => (
+                    <a
+                      key={idx}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between p-4 bg-background rounded-lg border hover:border-primary hover:shadow-md transition-all group"
+                    >
+                      <span className="font-medium text-foreground group-hover:text-primary transition-colors truncate pr-4">
+                        {link.title || link.url}
+                      </span>
+                      <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary shrink-0" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </article>
         </div>
         <Footer />
@@ -169,7 +194,7 @@ const News = () => {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="bg-primary py-20">
+      <section className="bg-primary pt-28 pb-16">
         <div className="container mx-auto px-4 text-center">
           <span className="inline-block text-accent font-semibold mb-4">ข่าวสารและกิจกรรม</span>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-primary-foreground mb-6">
@@ -182,7 +207,7 @@ const News = () => {
       </section>
 
       {/* Filters */}
-      <section className="py-8 bg-secondary/30">
+      <section className="py-4 bg-secondary/30">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row gap-4">
             {/* Search */}
@@ -224,7 +249,7 @@ const News = () => {
       </section>
 
       {/* News Grid */}
-      <section className="section-padding bg-background">
+      <section className="py-8 bg-background">
         <div className="container mx-auto px-4">
           {isLoading ? (
             <div className="text-center py-12">

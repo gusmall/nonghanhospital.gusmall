@@ -17,6 +17,7 @@ import Contact from "./pages/Contact";
 import Administrators from "./pages/Administrators";
 import Staff from "./pages/Staff";
 import Students from "./pages/Students";
+import Events from "./pages/Events";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/gallery" element={<Gallery />} />
+          <Route path="/events" element={<Events />} />
           <Route path="/calendar" element={<AcademicCalendar />} />
           <Route path="/enrollment" element={<Enrollment />} />
           <Route path="*" element={<NotFound />} />

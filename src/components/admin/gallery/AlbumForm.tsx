@@ -169,6 +169,7 @@ export const AlbumForm = ({ album, onSuccess, onCancel }: AlbumFormProps) => {
                                 onUploadComplete={(url) => setFormData({ ...formData, cover_photo_url: url })}
                                 bucket="images"
                                 folder="gallery/covers"
+                                compressionPreset="cover"
                             />
                         </div>
 

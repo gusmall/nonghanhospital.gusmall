@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useSchoolSettings } from '@/hooks/useSchoolSettings';
 
 const navLinks = [
   { name: 'หน้าแรก', href: '/' },
@@ -21,6 +22,7 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const isHomePage = location.pathname === '/';
+  const { settings } = useSchoolSettings();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -32,11 +34,10 @@ const Navbar = () => {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled || !isHomePage
-          ? 'bg-card/95 backdrop-blur-md shadow-lg'
-          : 'bg-transparent'
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled || !isHomePage
+        ? 'bg-card/95 backdrop-blur-md shadow-lg'
+        : 'bg-transparent'
+        }`}
     >
       <div className="container mx-auto px-4">
         <nav className="flex items-center justify-between h-20">
@@ -47,10 +48,10 @@ const Navbar = () => {
             </div>
             <div className="hidden sm:block">
               <h1 className={`text-lg font-bold transition-colors ${scrolled || !isHomePage ? 'text-primary' : 'text-card'}`}>
-                โรงเรียนห้องสื่อครูคอมวิทยาคม
+                {settings.school_name}
               </h1>
               <p className={`text-xs transition-colors ${scrolled || !isHomePage ? 'text-muted-foreground' : 'text-card/80'}`}>
-                ก้าวสู่อนาคตด้วยปัญญา
+                {settings.school_tagline}
               </p>
             </div>
           </Link>
@@ -61,13 +62,12 @@ const Navbar = () => {
               <Link
                 key={link.name}
                 to={link.href}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:bg-accent/20 ${
-                  location.pathname === link.href
-                    ? 'bg-accent/20 text-primary'
-                    : scrolled || !isHomePage
-                      ? 'text-foreground hover:text-primary'
-                      : 'text-card hover:text-accent'
-                }`}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:bg-accent/20 ${location.pathname === link.href
+                  ? 'bg-primary text-primary-foreground shadow-md font-bold'
+                  : scrolled || !isHomePage
+                    ? 'text-foreground hover:text-primary'
+                    : 'text-card hover:text-accent'
+                  }`}
               >
                 {link.name}
               </Link>
@@ -86,9 +86,8 @@ const Navbar = () => {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className={`lg:hidden p-2 rounded-lg transition-colors ${
-              scrolled || !isHomePage ? 'text-foreground' : 'text-card'
-            }`}
+            className={`lg:hidden p-2 rounded-lg transition-colors ${scrolled || !isHomePage ? 'text-foreground' : 'text-card'
+              }`}
           >
             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -96,9 +95,8 @@ const Navbar = () => {
 
         {/* Mobile Navigation */}
         <div
-          className={`lg:hidden overflow-hidden transition-all duration-300 ${
-            isOpen ? 'max-h-[500px] pb-4' : 'max-h-0'
-          }`}
+          className={`lg:hidden overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-[500px] pb-4' : 'max-h-0'
+            }`}
         >
           <div className="bg-card rounded-xl shadow-lg p-4 mt-2">
             {navLinks.map((link) => (
@@ -106,11 +104,10 @@ const Navbar = () => {
                 key={link.name}
                 to={link.href}
                 onClick={() => setIsOpen(false)}
-                className={`block px-4 py-3 rounded-lg font-medium transition-colors ${
-                  location.pathname === link.href
-                    ? 'bg-secondary text-primary'
-                    : 'text-foreground hover:bg-secondary'
-                }`}
+                className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === link.href
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-foreground hover:bg-secondary'
+                  }`}
               >
                 {link.name}
               </Link>

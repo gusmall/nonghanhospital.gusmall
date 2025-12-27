@@ -1,8 +1,9 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Upload, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { compressImage, compressionPresets, type CompressOptions } from '@/utils/imageUtils';
 
 interface ImageUploadProps {
     onUploadComplete: (url: string) => void;
@@ -10,6 +11,7 @@ interface ImageUploadProps {
     bucket?: string;
     folder?: string;
     maxSizeMB?: number;
+    compressionPreset?: keyof typeof compressionPresets;
 }
 
 export const ImageUpload = ({
@@ -18,11 +20,17 @@ export const ImageUpload = ({
     bucket = 'images',
     folder = 'uploads',
     maxSizeMB = 5,
+    compressionPreset = 'profile',
 }: ImageUploadProps) => {
     const [preview, setPreview] = useState<string | null>(currentImage || null);
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
+
+    // Update preview when currentImage changes
+    useEffect(() => {
+        setPreview(currentImage || null);
+    }, [currentImage]);
 
     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -49,24 +57,25 @@ export const ImageUpload = ({
             return;
         }
 
-        // Show preview
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setPreview(reader.result as string);
-        };
-        reader.readAsDataURL(file);
-
         // Upload to Supabase Storage
         setIsUploading(true);
         try {
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+            // Compress image before upload
+            const compressionOptions = compressionPresets[compressionPreset];
+            const compressedBlob = await compressImage(file, compressionOptions);
+
+            // Show compressed preview
+            const previewUrl = URL.createObjectURL(compressedBlob);
+            setPreview(previewUrl);
+
+            const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(7)}.webp`;
 
             const { data, error } = await supabase.storage
                 .from(bucket)
-                .upload(fileName, file, {
+                .upload(fileName, compressedBlob, {
                     cacheControl: '3600',
                     upsert: false,
+                    contentType: 'image/webp',
                 });
 
             if (error) throw error;
@@ -80,7 +89,7 @@ export const ImageUpload = ({
 
             toast({
                 title: 'อัปโหลดสำเร็จ',
-                description: 'รูปภาพถูกอัปโหลดเรียบร้อยแล้ว',
+                description: 'รูปภาพถูกบีบอัดและอัปโหลดเรียบร้อยแล้ว',
             });
         } catch (error: any) {
             console.error('Upload error:', error);

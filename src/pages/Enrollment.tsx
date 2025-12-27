@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   ArrowLeft,
   ArrowRight,
@@ -28,8 +29,13 @@ import {
   Phone,
   Mail,
   MapPin,
+  Loader2,
+  Search,
+  Printer,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useSchoolSettings } from '@/hooks/useSchoolSettings';
 
 const enrollmentSchema = z.object({
   // Student Info
@@ -43,7 +49,7 @@ const enrollmentSchema = z.object({
   phone: z.string().min(9, 'กรุณากรอกเบอร์โทรศัพท์').max(10),
   email: z.string().email('รูปแบบอีเมลไม่ถูกต้อง'),
   address: z.string().min(10, 'กรุณากรอกที่อยู่'),
-  
+
   // Parent Info
   fatherName: z.string().min(2, 'กรุณากรอกชื่อบิดา').max(100),
   fatherPhone: z.string().min(9, 'กรุณากรอกเบอร์โทรศัพท์').max(10),
@@ -51,14 +57,14 @@ const enrollmentSchema = z.object({
   motherName: z.string().min(2, 'กรุณากรอกชื่อมารดา').max(100),
   motherPhone: z.string().min(9, 'กรุณากรอกเบอร์โทรศัพท์').max(10),
   motherOccupation: z.string().min(1, 'กรุณากรอกอาชีพ'),
-  
+
   // Academic Info
   previousSchool: z.string().min(2, 'กรุณากรอกชื่อโรงเรียนเดิม'),
   previousLevel: z.string().min(1, 'กรุณาเลือกระดับชั้นที่จบ'),
   gpa: z.string().min(1, 'กรุณากรอกเกรดเฉลี่ย'),
   enrollLevel: z.string().min(1, 'กรุณาเลือกระดับชั้นที่ต้องการสมัคร'),
   program: z.string().min(1, 'กรุณาเลือกแผนการเรียน'),
-  
+
   // Agreements
   agreeTerms: z.boolean().refine(val => val === true, 'กรุณายอมรับข้อตกลง'),
   agreePrivacy: z.boolean().refine(val => val === true, 'กรุณายอมรับนโยบายความเป็นส่วนตัว'),
@@ -73,17 +79,108 @@ const steps = [
   { id: 4, title: 'ตรวจสอบข้อมูล', icon: FileText },
 ];
 
-const programs = [
-  { value: 'sci-math', label: 'วิทยาศาสตร์-คณิตศาสตร์' },
-  { value: 'arts-lang', label: 'ศิลป์-ภาษา' },
-  { value: 'arts-calc', label: 'ศิลป์-คำนวณ' },
-  { value: 'computer', label: 'คอมพิวเตอร์' },
-];
+interface ProgramOption {
+  value: string;
+  label: string;
+}
 
 const Enrollment = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [foundAdmission, setFoundAdmission] = useState<any>(null);
+  const [showSearchDialog, setShowSearchDialog] = useState(false);
+  const [programs, setPrograms] = useState<ProgramOption[]>([]);
   const { toast } = useToast();
+  const { settings } = useSchoolSettings();
+
+  // Fetch programs from database
+  useEffect(() => {
+    const fetchPrograms = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('curriculum_programs')
+          .select('id, title')
+          .eq('is_active', true)
+          .order('order_position', { ascending: true });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          setPrograms(data.map(p => ({ value: p.id, label: p.title })));
+        } else {
+          // Fallback to default programs if none in database
+          setPrograms([
+            { value: 'sci-math', label: 'วิทย์-คณิต' },
+            { value: 'arts-lang', label: 'ศิลป์-ภาษา' },
+            { value: 'arts-calc', label: 'ศิลป์-คำนวณ' },
+            { value: 'computer', label: 'คอมพิวเตอร์' },
+          ]);
+        }
+      } catch (error) {
+        console.error('Error fetching programs:', error);
+        // Use default programs on error
+        setPrograms([
+          { value: 'sci-math', label: 'วิทย์-คณิต' },
+          { value: 'arts-lang', label: 'ศิลป์-ภาษา' },
+          { value: 'arts-calc', label: 'ศิลป์-คำนวณ' },
+          { value: 'computer', label: 'คอมพิวเตอร์' },
+        ]);
+      }
+    };
+    fetchPrograms();
+  }, []);
+
+  const searchAdmission = async () => {
+    if (!searchQuery.trim()) {
+      toast({ variant: 'destructive', title: 'กรุณากรอกข้อมูลค้นหา' });
+      return;
+    }
+    setIsSearching(true);
+    try {
+      // Try searching by name first
+      let { data, error } = await supabase
+        .from('admissions')
+        .select('*')
+        .ilike('student_name', `%${searchQuery.trim()}%`)
+        .limit(1);
+
+      // If no results by name, try searching by ID number (from admission number like ENR-2568-1234)
+      if ((!data || data.length === 0) && searchQuery.includes('-')) {
+        const idPart = searchQuery.split('-').pop();
+        if (idPart) {
+          const result = await supabase
+            .from('admissions')
+            .select('*')
+            .ilike('id', `%${idPart}%`)
+            .limit(1);
+          data = result.data;
+          error = result.error;
+        }
+      }
+
+      if (error) {
+        console.error('Search error:', error);
+        toast({ variant: 'destructive', title: 'เกิดข้อผิดพลาด', description: error.message });
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        toast({ variant: 'destructive', title: 'ไม่พบใบสมัคร', description: 'กรุณาตรวจสอบชื่อหรือหมายเลขอีกครั้ง' });
+        return;
+      }
+
+      setFoundAdmission(data[0]);
+      setShowSearchDialog(true);
+    } catch (e) {
+      console.error('Search exception:', e);
+      toast({ variant: 'destructive', title: 'เกิดข้อผิดพลาด' });
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   const form = useForm<EnrollmentFormData>({
     resolver: zodResolver(enrollmentSchema),
@@ -116,7 +213,7 @@ const Enrollment = () => {
 
   const nextStep = async () => {
     let fieldsToValidate: (keyof EnrollmentFormData)[] = [];
-    
+
     if (currentStep === 1) {
       fieldsToValidate = ['prefix', 'firstName', 'lastName', 'idCard', 'birthDate', 'nationality', 'religion', 'phone', 'email', 'address'];
     } else if (currentStep === 2) {
@@ -135,70 +232,238 @@ const Enrollment = () => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
-  const onSubmit = (data: EnrollmentFormData) => {
-    console.log('Form submitted:', data);
-    setIsSubmitted(true);
-    toast({
-      title: 'สมัครเรียนสำเร็จ!',
-      description: 'เราได้รับใบสมัครของคุณแล้ว จะติดต่อกลับโดยเร็ว',
-    });
+  const onSubmit = async (data: EnrollmentFormData) => {
+    setIsSubmitting(true);
+
+    try {
+      // Get the program label for display
+      const programLabel = programs.find(p => p.value === data.program)?.label || data.program;
+
+      // Insert into Supabase
+      const { error } = await supabase
+        .from('admissions')
+        .insert({
+          student_name: `${data.prefix}${data.firstName} ${data.lastName}`,
+          student_id_card: data.idCard,
+          birth_date: data.birthDate,
+          gender: data.prefix.includes('ชาย') || data.prefix === 'นาย' ? 'ชาย' : 'หญิง',
+          parent_name: data.fatherName,
+          parent_phone: data.fatherPhone,
+          parent_email: data.email,
+          address: data.address,
+          previous_school: data.previousSchool,
+          grade_applying: data.enrollLevel,
+          program_applying: programLabel,
+          status: 'pending',
+        });
+
+      if (error) throw error;
+
+      setIsSubmitted(true);
+      toast({
+        title: 'สมัครเรียนสำเร็จ!',
+        description: 'เราได้รับใบสมัครของคุณแล้ว จะติดต่อกลับโดยเร็ว',
+      });
+    } catch (error: any) {
+      console.error('Error submitting admission:', error);
+      toast({
+        variant: 'destructive',
+        title: 'เกิดข้อผิดพลาด',
+        description: 'ไม่สามารถส่งใบสมัครได้ กรุณาลองใหม่อีกครั้ง',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isSubmitted) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        
-        <section className="pt-32 pb-16">
-          <div className="container-school">
-            <Card className="max-w-2xl mx-auto text-center">
-              <CardContent className="py-16">
-                <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-green-100 flex items-center justify-center">
-                  <CheckCircle className="w-12 h-12 text-green-600" />
-                </div>
-                <h2 className="text-3xl font-bold text-foreground mb-4">
-                  สมัครเรียนสำเร็จ!
-                </h2>
-                <p className="text-muted-foreground mb-2">
-                  เราได้รับใบสมัครของคุณเรียบร้อยแล้ว
-                </p>
-                <p className="text-muted-foreground mb-8">
-                  หมายเลขใบสมัคร: <span className="font-bold text-primary">ENR-2568-{Math.floor(Math.random() * 9000) + 1000}</span>
-                </p>
-                <div className="bg-secondary rounded-lg p-6 mb-8 text-left">
-                  <h3 className="font-semibold mb-4">ขั้นตอนถัดไป:</h3>
-                  <ol className="space-y-2 text-sm text-muted-foreground">
-                    <li>1. รอการตรวจสอบเอกสารจากทางโรงเรียน (1-3 วันทำการ)</li>
-                    <li>2. รับอีเมลยืนยันและนัดหมายวันสัมภาษณ์</li>
-                    <li>3. เข้าสอบวัดความรู้พื้นฐาน</li>
-                    <li>4. ประกาศผลการคัดเลือก</li>
-                  </ol>
-                </div>
-                <div className="flex gap-4 justify-center">
-                  <Link to="/">
-                    <Button variant="outline" className="gap-2">
-                      <ArrowLeft className="w-4 h-4" />
-                      กลับหน้าหลัก
-                    </Button>
-                  </Link>
-                  <Button onClick={() => window.print()}>
-                    พิมพ์ใบสมัคร
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
+    const formData = form.getValues();
+    const programLabel = programs.find(p => p.value === formData.program)?.label || formData.program;
 
-        <Footer />
-      </div>
+    return (
+      <>
+        {/* Print-only styles */}
+        <style>{`
+          @media print {
+            @page { size: A4 portrait; margin: 8mm; }
+            body * { visibility: hidden; }
+            #print-enrollment, #print-enrollment * { visibility: visible; }
+            #print-enrollment { position: absolute; left: 0; top: 0; width: 100%; }
+            nav, footer, .print\\:hidden { display: none !important; }
+          }
+        `}</style>
+
+        <div className="min-h-screen bg-background print:hidden">
+          <Navbar />
+          <section className="pt-32 pb-16">
+            <div className="container-school">
+              <Card className="max-w-2xl mx-auto text-center">
+                <CardContent className="py-16">
+                  <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-green-100 flex items-center justify-center">
+                    <CheckCircle className="w-12 h-12 text-green-600" />
+                  </div>
+                  <h2 className="text-3xl font-bold text-foreground mb-4">สมัครเรียนสำเร็จ!</h2>
+                  <p className="text-muted-foreground mb-2">เราได้รับใบสมัครของคุณเรียบร้อยแล้ว</p>
+                  <p className="text-muted-foreground mb-8">
+                    หมายเลขใบสมัคร: <span className="font-bold text-primary">ENR-2568-{Math.floor(Math.random() * 9000) + 1000}</span>
+                  </p>
+                  <div className="bg-secondary rounded-lg p-6 mb-8 text-left">
+                    <h3 className="font-semibold mb-4">ขั้นตอนถัดไป:</h3>
+                    <ol className="space-y-2 text-sm text-muted-foreground">
+                      <li>1. พิมพ์ใบสมัครและติดรูปถ่าย 1 นิ้ว</li>
+                      <li>2. นำใบสมัครมายื่นที่โรงเรียนพร้อมเอกสารประกอบ</li>
+                      <li>3. รอเข้าสอบวัดความรู้พื้นฐาน</li>
+                      <li>4. ประกาศผลการคัดเลือก</li>
+                    </ol>
+                  </div>
+                  <div className="flex gap-4 justify-center">
+                    <Link to="/"><Button variant="outline" className="gap-2"><ArrowLeft className="w-4 h-4" />กลับหน้าหลัก</Button></Link>
+                    <Button onClick={() => window.print()} className="gap-2"><FileText className="w-4 h-4" />พิมพ์ใบสมัคร</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </section>
+          <Footer />
+        </div>
+
+        {/* Print Form - 1 A4 Page */}
+        <div id="print-enrollment" className="hidden print:block bg-white text-black p-4" style={{ fontFamily: 'Sarabun, sans-serif', fontSize: '11px' }}>
+          {/* Header */}
+          <div className="text-center border-b-2 border-black pb-2 mb-3">
+            <h1 className="text-lg font-bold">ใบสมัครเข้าเรียน</h1>
+            <h2 className="text-base font-semibold">{settings?.school_name || 'โรงเรียน'} ปีการศึกษา 2568</h2>
+          </div>
+
+          {/* Top Row: Info + Photo */}
+          <div className="flex justify-between mb-3">
+            <div>
+              <p><strong>เลขที่ใบสมัคร:</strong> ENR-2568-____</p>
+              <p><strong>วันที่สมัคร:</strong> {new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+              <p className="mt-2"><strong>สมัครเข้าชั้น:</strong> {formData.enrollLevel} <strong>แผน:</strong> {programLabel}</p>
+            </div>
+            <div className="w-20 h-24 border-2 border-black flex items-center justify-center text-center" style={{ fontSize: '8px' }}>
+              <div>ติดรูปถ่าย<br />1 นิ้ว</div>
+            </div>
+          </div>
+
+          {/* Section 1: Student */}
+          <div className="mb-2">
+            <div className="bg-black text-white px-2 py-0.5 text-xs font-bold mb-1">ส่วนที่ 1: ข้อมูลนักเรียน</div>
+            <table className="w-full border-collapse" style={{ fontSize: '10px' }}>
+              <tbody>
+                <tr>
+                  <td className="border border-gray-400 p-1 w-24"><strong>ชื่อ-สกุล:</strong></td>
+                  <td className="border border-gray-400 p-1" colSpan={3}>{formData.prefix}{formData.firstName} {formData.lastName}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 p-1"><strong>เลขบัตร:</strong></td>
+                  <td className="border border-gray-400 p-1">{formData.idCard}</td>
+                  <td className="border border-gray-400 p-1 w-16"><strong>วันเกิด:</strong></td>
+                  <td className="border border-gray-400 p-1">{formData.birthDate}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 p-1"><strong>สัญชาติ:</strong></td>
+                  <td className="border border-gray-400 p-1">{formData.nationality}</td>
+                  <td className="border border-gray-400 p-1"><strong>ศาสนา:</strong></td>
+                  <td className="border border-gray-400 p-1">{formData.religion}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 p-1"><strong>โทร:</strong></td>
+                  <td className="border border-gray-400 p-1">{formData.phone}</td>
+                  <td className="border border-gray-400 p-1"><strong>อีเมล:</strong></td>
+                  <td className="border border-gray-400 p-1">{formData.email}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 p-1"><strong>ที่อยู่:</strong></td>
+                  <td className="border border-gray-400 p-1" colSpan={3}>{formData.address}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Section 2: Parents */}
+          <div className="mb-2">
+            <div className="bg-black text-white px-2 py-0.5 text-xs font-bold mb-1">ส่วนที่ 2: ข้อมูลผู้ปกครอง</div>
+            <table className="w-full border-collapse" style={{ fontSize: '10px' }}>
+              <tbody>
+                <tr>
+                  <td className="border border-gray-400 p-1 w-24"><strong>ชื่อบิดา:</strong></td>
+                  <td className="border border-gray-400 p-1">{formData.fatherName}</td>
+                  <td className="border border-gray-400 p-1 w-12"><strong>โทร:</strong></td>
+                  <td className="border border-gray-400 p-1">{formData.fatherPhone}</td>
+                  <td className="border border-gray-400 p-1 w-16"><strong>อาชีพ:</strong></td>
+                  <td className="border border-gray-400 p-1">{formData.fatherOccupation}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 p-1"><strong>ชื่อมารดา:</strong></td>
+                  <td className="border border-gray-400 p-1">{formData.motherName}</td>
+                  <td className="border border-gray-400 p-1"><strong>โทร:</strong></td>
+                  <td className="border border-gray-400 p-1">{formData.motherPhone}</td>
+                  <td className="border border-gray-400 p-1"><strong>อาชีพ:</strong></td>
+                  <td className="border border-gray-400 p-1">{formData.motherOccupation}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Section 3: Academic */}
+          <div className="mb-2">
+            <div className="bg-black text-white px-2 py-0.5 text-xs font-bold mb-1">ส่วนที่ 3: ข้อมูลการศึกษา</div>
+            <table className="w-full border-collapse" style={{ fontSize: '10px' }}>
+              <tbody>
+                <tr>
+                  <td className="border border-gray-400 p-1 w-24"><strong>โรงเรียนเดิม:</strong></td>
+                  <td className="border border-gray-400 p-1">{formData.previousSchool}</td>
+                  <td className="border border-gray-400 p-1 w-20"><strong>ระดับที่จบ:</strong></td>
+                  <td className="border border-gray-400 p-1">{formData.previousLevel}</td>
+                  <td className="border border-gray-400 p-1 w-12"><strong>GPA:</strong></td>
+                  <td className="border border-gray-400 p-1">{formData.gpa}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Declaration */}
+          <div className="border border-black p-2 mb-3" style={{ fontSize: '10px' }}>
+            <strong>คำรับรอง:</strong> ข้าพเจ้าขอรับรองว่าข้อความข้างต้นเป็นความจริงทุกประการ หากปรากฏว่าเป็นเท็จ ข้าพเจ้ายินยอมให้โรงเรียนเพิกถอนการรับสมัครได้ทันที
+          </div>
+
+          {/* Signatures */}
+          <div className="flex justify-around mt-4">
+            <div className="text-center" style={{ fontSize: '10px' }}>
+              <div className="border-b border-black w-36 h-8 mb-1"></div>
+              <p>ลงชื่อ ..........................</p>
+              <p>(....................................)</p>
+              <p>ผู้สมัคร</p>
+            </div>
+            <div className="text-center" style={{ fontSize: '10px' }}>
+              <div className="border-b border-black w-36 h-8 mb-1"></div>
+              <p>ลงชื่อ ..........................</p>
+              <p>(....................................)</p>
+              <p>ผู้ปกครอง</p>
+            </div>
+          </div>
+
+          {/* Officer Section */}
+          <div className="mt-4 pt-2 border-t border-gray-400 text-center" style={{ fontSize: '9px' }}>
+            <p><strong>สำหรับเจ้าหน้าที่</strong></p>
+            <div className="flex justify-center gap-6 mt-1">
+              <span>☐ รับเอกสารครบ</span>
+              <span>☐ ตรวจสอบแล้ว</span>
+              <span>ผู้รับสมัคร .................</span>
+              <span>วันที่ ...../...../.....</span>
+            </div>
+          </div>
+        </div>
+      </>
     );
   }
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       {/* Hero Section */}
       <section className="pt-32 pb-8 bg-gradient-to-br from-primary via-primary/90 to-primary/80">
         <div className="container-school text-center">
@@ -206,11 +471,140 @@ const Enrollment = () => {
           <h1 className="text-4xl md:text-5xl font-bold text-card mb-4">
             สมัครเรียนออนไลน์
           </h1>
-          <p className="text-card/80 text-lg max-w-2xl mx-auto">
+          <p className="text-card/80 text-lg max-w-2xl mx-auto mb-6">
             ปีการศึกษา 2568 | รับสมัครนักเรียนชั้น ม.1 และ ม.4
           </p>
+
+          {/* Search existing admission */}
+          <div className="max-w-md mx-auto bg-white/10 backdrop-blur rounded-lg p-4">
+            <p className="text-card/90 text-sm mb-2">ค้นหาใบสมัครที่ยื่นไปแล้ว</p>
+            <div className="flex gap-2">
+              <Input
+                placeholder="ชื่อนักเรียน หรือ หมายเลขใบสมัคร"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-white/90 text-foreground"
+                onKeyDown={(e) => e.key === 'Enter' && searchAdmission()}
+              />
+              <Button onClick={searchAdmission} disabled={isSearching} variant="secondary" className="gap-2">
+                {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                ค้นหา
+              </Button>
+            </div>
+          </div>
         </div>
       </section>
+
+      {/* Search Result Dialog */}
+      <Dialog open={showSearchDialog} onOpenChange={setShowSearchDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>ข้อมูลใบสมัคร</DialogTitle>
+          </DialogHeader>
+          {foundAdmission && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div><span className="text-muted-foreground">ชื่อ:</span> <strong>{foundAdmission.student_name}</strong></div>
+                <div><span className="text-muted-foreground">สถานะ:</span>
+                  <Badge className={`ml-2 ${foundAdmission.status === 'approved' ? 'bg-green-100 text-green-800' :
+                    foundAdmission.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                      foundAdmission.status === 'reviewing' ? 'bg-blue-100 text-blue-800' :
+                        'bg-yellow-100 text-yellow-800'
+                    }`}>
+                    {foundAdmission.status === 'approved' ? 'อนุมัติแล้ว' :
+                      foundAdmission.status === 'rejected' ? 'ไม่อนุมัติ' :
+                        foundAdmission.status === 'reviewing' ? 'กำลังตรวจสอบ' : 'รอดำเนินการ'}
+                  </Badge>
+                </div>
+                <div><span className="text-muted-foreground">ระดับชั้น:</span> {foundAdmission.grade_applying}</div>
+                <div><span className="text-muted-foreground">แผนการเรียน:</span> {foundAdmission.program_applying}</div>
+                <div><span className="text-muted-foreground">โรงเรียนเดิม:</span> {foundAdmission.previous_school}</div>
+                <div><span className="text-muted-foreground">วันที่สมัคร:</span> {new Date(foundAdmission.created_at).toLocaleDateString('th-TH')}</div>
+              </div>
+              <div className="pt-4 border-t flex justify-between">
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => {
+                    const printWindow = window.open('', '_blank');
+                    if (printWindow) {
+                      printWindow.document.write(`
+                        <html>
+                        <head>
+                          <title>ใบสมัครเข้าเรียน</title>
+                          <style>
+                            @page { size: A4 portrait; margin: 8mm; }
+                            body { font-family: 'Sarabun', sans-serif; font-size: 11px; padding: 16px; }
+                            h1 { font-size: 18px; margin: 0; }
+                            h2 { font-size: 14px; margin: 4px 0 16px 0; }
+                            .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 12px; }
+                            .top-row { display: flex; justify-content: space-between; margin-bottom: 12px; }
+                            .photo-box { width: 80px; height: 96px; border: 2px solid #000; display: flex; align-items: center; justify-content: center; font-size: 8px; text-align: center; }
+                            .section-title { background: #000; color: #fff; padding: 2px 8px; font-weight: bold; font-size: 10px; margin-bottom: 4px; }
+                            table { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 10px; }
+                            td { border: 1px solid #999; padding: 4px; }
+                            .declaration { border: 1px solid #000; padding: 8px; margin: 12px 0; font-size: 10px; }
+                            .signatures { display: flex; justify-content: space-around; margin-top: 16px; }
+                            .sig-box { text-align: center; font-size: 10px; }
+                            .sig-line { border-bottom: 1px solid #000; width: 144px; height: 32px; margin-bottom: 4px; }
+                            .officer { margin-top: 16px; padding-top: 8px; border-top: 1px solid #999; text-align: center; font-size: 9px; }
+                          </style>
+                        </head>
+                        <body>
+                          <div class="header">
+                            <h1>ใบสมัครเข้าเรียน</h1>
+                            <h2>${settings?.school_name || 'โรงเรียน'} ปีการศึกษา 2568</h2>
+                          </div>
+                          <div class="top-row">
+                            <div>
+                              <p><strong>วันที่สมัคร:</strong> ${new Date(foundAdmission.created_at).toLocaleDateString('th-TH')}</p>
+                              <p><strong>สมัครเข้าชั้น:</strong> ${foundAdmission.grade_applying} <strong>แผน:</strong> ${foundAdmission.program_applying}</p>
+                            </div>
+                            <div class="photo-box">ติดรูปถ่าย<br/>1 นิ้ว</div>
+                          </div>
+                          <div class="section-title">ส่วนที่ 1: ข้อมูลนักเรียน</div>
+                          <table>
+                            <tr><td width="25%"><strong>ชื่อ-สกุล:</strong></td><td colspan="3">${foundAdmission.student_name}</td></tr>
+                            <tr><td><strong>เลขบัตร:</strong></td><td>${foundAdmission.student_id_card || '-'}</td><td width="15%"><strong>วันเกิด:</strong></td><td>${foundAdmission.birth_date || '-'}</td></tr>
+                            <tr><td><strong>ที่อยู่:</strong></td><td colspan="3">${foundAdmission.address || '-'}</td></tr>
+                          </table>
+                          <div class="section-title">ส่วนที่ 2: ข้อมูลผู้ปกครอง</div>
+                          <table>
+                            <tr><td width="25%"><strong>ชื่อผู้ปกครอง:</strong></td><td>${foundAdmission.parent_name}</td><td width="15%"><strong>โทร:</strong></td><td>${foundAdmission.parent_phone}</td></tr>
+                            <tr><td><strong>อีเมล:</strong></td><td colspan="3">${foundAdmission.parent_email || '-'}</td></tr>
+                          </table>
+                          <div class="section-title">ส่วนที่ 3: ข้อมูลการศึกษา</div>
+                          <table>
+                            <tr><td width="25%"><strong>โรงเรียนเดิม:</strong></td><td colspan="3">${foundAdmission.previous_school || '-'}</td></tr>
+                          </table>
+                          <div class="declaration">
+                            <strong>คำรับรอง:</strong> ข้าพเจ้าขอรับรองว่าข้อความข้างต้นเป็นความจริงทุกประการ หากปรากฏว่าเป็นเท็จ ข้าพเจ้ายินยอมให้โรงเรียนเพิกถอนการรับสมัครได้ทันที
+                          </div>
+                          <div class="signatures">
+                            <div class="sig-box"><div class="sig-line"></div><p>ลงชื่อ ..........................</p><p>(....................................)</p><p>ผู้สมัคร</p></div>
+                            <div class="sig-box"><div class="sig-line"></div><p>ลงชื่อ ..........................</p><p>(....................................)</p><p>ผู้ปกครอง</p></div>
+                          </div>
+                          <div class="officer">
+                            <p><strong>สำหรับเจ้าหน้าที่</strong></p>
+                            <p>☐ รับเอกสารครบ &nbsp;&nbsp; ☐ ตรวจสอบแล้ว &nbsp;&nbsp; ผู้รับสมัคร ................. &nbsp;&nbsp; วันที่ ...../...../.....</p>
+                          </div>
+                        </body>
+                        </html>
+                      `);
+                      printWindow.document.close();
+                      printWindow.print();
+                    }
+                  }}
+                >
+                  <Printer className="w-4 h-4" />
+                  พิมพ์ใบสมัคร
+                </Button>
+                <Button onClick={() => setShowSearchDialog(false)}>ปิด</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Progress Steps */}
       <section className="py-8 bg-card border-b">
@@ -220,11 +614,10 @@ const Enrollment = () => {
               <div key={step.id} className="flex items-center">
                 <div className="flex flex-col items-center">
                   <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
-                      currentStep >= step.id
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-secondary text-muted-foreground'
-                    }`}
+                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${currentStep >= step.id
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-secondary text-muted-foreground'
+                      }`}
                   >
                     {currentStep > step.id ? (
                       <Check className="w-6 h-6" />
@@ -232,17 +625,15 @@ const Enrollment = () => {
                       <step.icon className="w-6 h-6" />
                     )}
                   </div>
-                  <span className={`text-sm mt-2 hidden md:block ${
-                    currentStep >= step.id ? 'text-primary font-medium' : 'text-muted-foreground'
-                  }`}>
+                  <span className={`text-sm mt-2 hidden md:block ${currentStep >= step.id ? 'text-primary font-medium' : 'text-muted-foreground'
+                    }`}>
                     {step.title}
                   </span>
                 </div>
                 {index < steps.length - 1 && (
                   <div
-                    className={`w-16 md:w-24 h-1 mx-2 rounded ${
-                      currentStep > step.id ? 'bg-primary' : 'bg-secondary'
-                    }`}
+                    className={`w-16 md:w-24 h-1 mx-2 rounded ${currentStep > step.id ? 'bg-primary' : 'bg-secondary'
+                      }`}
                   />
                 )}
               </div>
@@ -299,7 +690,7 @@ const Enrollment = () => {
                         )}
                       />
                       <div className="hidden md:block" />
-                      
+
                       <FormField
                         control={form.control}
                         name="firstName"
@@ -313,7 +704,7 @@ const Enrollment = () => {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name="lastName"
@@ -327,7 +718,7 @@ const Enrollment = () => {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name="idCard"
@@ -341,7 +732,7 @@ const Enrollment = () => {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name="birthDate"
@@ -355,7 +746,7 @@ const Enrollment = () => {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name="nationality"
@@ -369,7 +760,7 @@ const Enrollment = () => {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name="religion"
@@ -383,7 +774,7 @@ const Enrollment = () => {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name="phone"
@@ -397,7 +788,7 @@ const Enrollment = () => {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name="email"
@@ -411,7 +802,7 @@ const Enrollment = () => {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name="address"
@@ -478,7 +869,7 @@ const Enrollment = () => {
                           />
                         </div>
                       </div>
-                      
+
                       <div>
                         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                           <User className="w-5 h-5 text-primary" />
@@ -546,7 +937,7 @@ const Enrollment = () => {
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={form.control}
                           name="previousLevel"
@@ -568,7 +959,7 @@ const Enrollment = () => {
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={form.control}
                           name="gpa"
@@ -582,7 +973,7 @@ const Enrollment = () => {
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={form.control}
                           name="enrollLevel"
@@ -604,7 +995,7 @@ const Enrollment = () => {
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={form.control}
                           name="program"
@@ -652,7 +1043,7 @@ const Enrollment = () => {
                             <p><span className="text-muted-foreground">อีเมล:</span> {form.getValues('email')}</p>
                           </CardContent>
                         </Card>
-                        
+
                         <Card>
                           <CardHeader>
                             <CardTitle className="text-base flex items-center gap-2">
@@ -667,7 +1058,7 @@ const Enrollment = () => {
                             <p><span className="text-muted-foreground">โทร:</span> {form.getValues('motherPhone')}</p>
                           </CardContent>
                         </Card>
-                        
+
                         <Card className="md:col-span-2">
                           <CardHeader>
                             <CardTitle className="text-base flex items-center gap-2">
@@ -707,7 +1098,7 @@ const Enrollment = () => {
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={form.control}
                           name="agreePrivacy"
@@ -755,9 +1146,18 @@ const Enrollment = () => {
                           <ArrowRight className="w-4 h-4" />
                         </Button>
                       ) : (
-                        <Button type="submit" className="gap-2">
-                          <Check className="w-4 h-4" />
-                          ส่งใบสมัคร
+                        <Button type="submit" className="gap-2" disabled={isSubmitting}>
+                          {isSubmitting ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              กำลังส่ง...
+                            </>
+                          ) : (
+                            <>
+                              <Check className="w-4 h-4" />
+                              ส่งใบสมัคร
+                            </>
+                          )}
                         </Button>
                       )}
                     </div>

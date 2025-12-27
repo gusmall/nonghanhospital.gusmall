@@ -1,14 +1,17 @@
 import { ChevronRight, Play, Users, Award, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useSchoolSettings } from '@/hooks/useSchoolSettings';
 import heroImage from '@/assets/hero-school.jpg';
 
-const stats = [
-  { icon: Users, value: '2,500+', label: 'นักเรียน' },
-  { icon: Award, value: '98%', label: 'ผ่านเข้ามหาวิทยาลัย' },
-  { icon: BookOpen, value: '50+', label: 'ปีแห่งความเป็นเลิศ' },
-];
-
 const HeroSection = () => {
+  const { settings } = useSchoolSettings();
+
+  const stats = [
+    { icon: Users, value: settings.stat_students, label: settings.stat_students_label },
+    { icon: Award, value: settings.stat_university, label: settings.stat_university_label },
+    { icon: BookOpen, value: settings.stat_years, label: settings.stat_years_label },
+  ];
+
   const scrollToSection = (href: string) => {
     const element = document.querySelector(href);
     if (element) {
@@ -22,7 +25,7 @@ const HeroSection = () => {
       <div className="absolute inset-0 z-0">
         <img
           src={heroImage}
-          alt="โรงเรียนห้องสื่อครูคอมวิทยาคม"
+          alt={settings.school_name}
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-navy-dark/95 via-navy/80 to-navy/60" />
@@ -34,20 +37,19 @@ const HeroSection = () => {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-accent/20 backdrop-blur-sm border border-accent/30 rounded-full px-4 py-2 mb-6 animate-fade-in">
             <span className="w-2 h-2 bg-accent rounded-full animate-pulse" />
-            <span className="text-accent text-sm font-medium">เปิดรับสมัครนักเรียนใหม่ ปีการศึกษา 2568</span>
+            <span className="text-accent text-sm font-medium">{settings.hero_badge}</span>
           </div>
 
           {/* Heading */}
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-card leading-tight mb-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-            ก้าวสู่อนาคต
+            {settings.hero_title_1}
             <br />
-            <span className="text-accent">ด้วยปัญญา</span>
+            <span className="text-accent">{settings.hero_title_2}</span>
           </h1>
 
           {/* Description */}
           <p className="text-lg sm:text-xl text-card/80 mb-8 max-w-xl animate-slide-up" style={{ animationDelay: '0.2s' }}>
-            โรงเรียนห้องสื่อครูคอมวิทยาคม สถาบันการศึกษาชั้นนำระดับมัธยมศึกษา มุ่งมั่นพัฒนาผู้เรียนให้มีความเป็นเลิศทางวิชาการ 
-            มีคุณธรรม จริยธรรม และทักษะชีวิตที่พร้อมสำหรับโลกอนาคต
+            {settings.school_description}
           </p>
 
           {/* CTA Buttons */}
@@ -95,3 +97,4 @@ const HeroSection = () => {
 };
 
 export default HeroSection;
+
