@@ -41,10 +41,8 @@ const Navbar = () => {
     >
       <div className="container mx-auto px-4">
         <nav className="flex items-center justify-between h-20">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
-              <span className="text-accent font-bold text-xl">วค</span>
+        
+            
             </div>
             <div className="hidden sm:block">
               <h1 className={`text-lg font-bold transition-colors ${scrolled || !isHomePage ? 'text-primary' : 'text-card'}`}>
