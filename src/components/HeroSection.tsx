@@ -49,10 +49,7 @@ const HeroSection = () => {
             <span className="text-accent">{settings.hero_title_2}</span>
           </h1>
 
-          {/* Description */}
-          <p className="text-lg sm:text-xl text-card/80 mb-8 max-w-xl animate-slide-up" style={{ animationDelay: '0.2s' }}>
-            {settings.school_description}
-          </p>
+       
 
           {/* CTA Buttons */}
           <div className="flex flex-wrap gap-4 mb-12 animate-slide-up" style={{ animationDelay: '0.3s' }}>
