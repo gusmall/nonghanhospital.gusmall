@@ -119,7 +119,7 @@ const AdminDashboard = () => {
         return (
           <div className="p-8">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-foreground mb-2">ยินดีต้อนรับสู่ระบบจัดการโรงเรียน</h1>
+              <h1 className="text-3xl font-bold text-foreground mb-2">ยินดีต้อนรับสู่ระบบจัดการเว็บไซต์โรงพยาบาลหนองหาน</h1>
               <p className="text-muted-foreground">ภาพรวมข้อมูลทั้งหมดในระบบ</p>
             </div>
 
