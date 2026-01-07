@@ -89,7 +89,7 @@ const defaultSettings: SchoolSettings = {
     school_history: 'ก่อตั้งเมื่อปี พ.ศ. 2517',
     hero_badge: 'โรงพยาบาลหนองหาน',
     hero_title_1: 'โรงพยาบาลหนองหาน เป็นโรงพยาบาลแม่ข่าย ที่มีคุณภาพ เพื่อประชาชนสุขภาพดี',
-    hero_title_2: '',
+    hero_title_2: '..',
     stat_students: '658',
     stat_students_label: 'จำนวนผู้รับบริการวันนี้',
     stat_university: '112',
