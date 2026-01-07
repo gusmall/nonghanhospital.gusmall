@@ -75,16 +75,7 @@ const HeroSection = () => {
             </Button>
           </div>
 
-         {/* Stats */}
-          <div className="grid grid-cols-3 gap-6 max-w-lg animate-fade-in" style={{ animationDelay: '0.5s' }}>
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <stat.icon className="w-6 h-6 text-accent mx-auto mb-2" />
-                <div className="text-2xl sm:text-3xl font-bold text-card">{stat.value}</div>
-                <div className="text-sm text-card/70">{stat.label}</div>
-              </div>
-            ))}
-          </div>
+       
         </div>
       </div>
 
