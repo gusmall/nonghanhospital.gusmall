@@ -61,7 +61,7 @@ const HeroSection = () => {
               size="lg"
               className="bg-accent text-accent-foreground font-semibold hover:bg-accent/90 gap-2 h-14 px-8"
             >
-              สมัครเรียน
+              บริจาค
               <ChevronRight className="w-5 h-5" />
             </Button>
             <Button
@@ -71,18 +71,11 @@ const HeroSection = () => {
               className="gap-2 h-14 px-8"
             >
               <Play className="w-5 h-5" />
-              เรียนรู้เพิ่มเติม
+              บริการประชาชน
             </Button>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-6 max-w-lg animate-fade-in" style={{ animationDelay: '0.5s' }}>
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <stat.icon className="w-6 h-6 text-accent mx-auto mb-2" />
-                <div className="text-2xl sm:text-3xl font-bold text-card">{stat.value}</div>
-                <div className="text-sm text-card/70">{stat.label}</div>
-              </div>
+         
             ))}
           </div>
         </div>
