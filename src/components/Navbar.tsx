@@ -112,11 +112,7 @@ const Navbar = () => {
                 {link.name}
               </Link>
             ))}
-            <Link to="/enrollment" onClick={() => setIsOpen(false)}>
-              <Button className="w-full mt-4 bg-accent text-accent-foreground font-semibold hover:bg-accent/90">
-                บริจาค
-              </Button>
-            </Link>
+           
           </div>
         </div>
       </div>
