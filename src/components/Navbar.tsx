@@ -48,14 +48,7 @@ const Navbar = () => {
            
             
             </div>
-            <div className="hidden sm:block">
-              <h1 className={`text-lg font-bold transition-colors ${scrolled || !isHomePage ? 'text-primary' : 'text-card'}`}>
-                {settings.school_name}
-              </h1>
-              <p className={`text-xs transition-colors ${scrolled || !isHomePage ? 'text-muted-foreground' : 'text-card/80'}`}>
-                {settings.school_tagline}
-              </p>
-            </div>
+            
           </Link>
 
           {/* Desktop Navigation */}
