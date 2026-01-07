@@ -142,17 +142,17 @@ export const SettingsManagement = () => {
                                 id="school_tagline"
                                 value={settings.school_tagline || ''}
                                 onChange={(e) => handleChange('school_tagline', e.target.value)}
-                                placeholder="โรงพยาบาลหนองหาน เป็นโรงพยาบาลแม่ข่าย ที่มีคุณภาพ เพื่อประชาชนสุขภาพดี"
+                                placeholder="ก้าวสู่อนาคตด้วยปัญญา"
                             />
                         </div>
 
                         <div className="space-y-2">
-                            
+                            <Label htmlFor="academic_year">ปีการศึกษาปัจจุบัน</Label>
                             <Input
                                 id="academic_year"
                                 value={settings.academic_year || ''}
                                 onChange={(e) => handleChange('academic_year', e.target.value)}
-                             
+                                placeholder="2568"
                             />
                         </div>
 
@@ -162,14 +162,53 @@ export const SettingsManagement = () => {
                                 id="school_description"
                                 value={settings.school_description || ''}
                                 onChange={(e) => handleChange('school_description', e.target.value)}
-                              
+                                placeholder="สถาบันการศึกษาชั้นนำระดับมัธยมศึกษา..."
                                 className="w-full min-h-[80px] px-3 py-2 border rounded-md text-sm"
                             />
                         </div>
                     </CardContent>
                 </Card>
 
-               
+                {/* Hero Section */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>ส่วน Hero (หน้าแรก)</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="hero_badge">ข้อความ Badge (เช่น เปิดรับสมัครนักเรียนใหม่)</Label>
+                            <Input
+                                id="hero_badge"
+                                value={settings.hero_badge || ''}
+                                onChange={(e) => handleChange('hero_badge', e.target.value)}
+                                placeholder="เปิดรับสมัครนักเรียนใหม่ ปีการศึกษา 2568"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="hero_title_1">ข้อความหัวเรื่อง บรรทัด 1</Label>
+                            <Input
+                                id="hero_title_1"
+                                value={settings.hero_title_1 || ''}
+                                onChange={(e) => handleChange('hero_title_1', e.target.value)}
+                                placeholder="ก้าวสู่อนาคต"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="hero_title_2">ข้อความหัวเรื่อง บรรทัด 2 (สีเน้น)</Label>
+                            <Input
+                                id="hero_title_2"
+                                value={settings.hero_title_2 || ''}
+                                onChange={(e) => handleChange('hero_title_2', e.target.value)}
+                                placeholder="ด้วยปัญญา"
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Stats */}
+                <Card>
                     <CardHeader>
                         <CardTitle>สถิติโรงเรียน (แสดงใน Hero Section)</CardTitle>
                     </CardHeader>
@@ -181,7 +220,7 @@ export const SettingsManagement = () => {
                                     id="stat_students"
                                     value={settings.stat_students || ''}
                                     onChange={(e) => handleChange('stat_students', e.target.value)}
-                                    placeholder="578"
+                                    placeholder="2,500+"
                                 />
                             </div>
                             <div className="space-y-2">
@@ -190,7 +229,7 @@ export const SettingsManagement = () => {
                                     id="stat_students_label"
                                     value={settings.stat_students_label || ''}
                                     onChange={(e) => handleChange('stat_students_label', e.target.value)}
-                                    placeholder="จำนวนผู้รับบริการวันนี้"
+                                    placeholder="นักเรียน"
                                 />
                             </div>
                         </div>
@@ -202,7 +241,7 @@ export const SettingsManagement = () => {
                                     id="stat_university"
                                     value={settings.stat_university || ''}
                                     onChange={(e) => handleChange('stat_university', e.target.value)}
-                                    placeholder="157"
+                                    placeholder="98%"
                                 />
                             </div>
                             <div className="space-y-2">
@@ -211,7 +250,7 @@ export const SettingsManagement = () => {
                                     id="stat_university_label"
                                     value={settings.stat_university_label || ''}
                                     onChange={(e) => handleChange('stat_university_label', e.target.value)}
-                                    placeholder="จำนวนผุ้ป่วยใน"
+                                    placeholder="ผ่านเข้ามหาวิทยาลัย"
                                 />
                             </div>
                         </div>
@@ -223,7 +262,7 @@ export const SettingsManagement = () => {
                                     id="stat_years"
                                     value={settings.stat_years || ''}
                                     onChange={(e) => handleChange('stat_years', e.target.value)}
-                                    placeholder="8500"
+                                    placeholder="50+"
                                 />
                             </div>
                             <div className="space-y-2">
@@ -232,7 +271,7 @@ export const SettingsManagement = () => {
                                     id="stat_years_label"
                                     value={settings.stat_years_label || ''}
                                     onChange={(e) => handleChange('stat_years_label', e.target.value)}
-                                    placeholder="จำนวนผู้ป่วยนอกเดือนนี้"
+                                    placeholder="ปีแห่งความเป็นเลิศ"
                                 />
                             </div>
                         </div>
