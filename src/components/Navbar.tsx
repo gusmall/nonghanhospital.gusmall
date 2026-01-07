@@ -8,11 +8,11 @@ const navLinks = [
   { name: 'หน้าแรก', href: '/' },
   { name: 'เกี่ยวกับเรา', href: '/about' },
   { name: 'ผู้บริหาร', href: '/administrators' },
-  { name: 'บุคลากร', href: '/staff' },
-  { name: 'นักเรียน', href: '/students' },
-  { name: 'หลักสูตร', href: '/curriculum' },
+  { name: 'บริการประชาชน', href: '/staff' },
+  { name: 'ระบบสารสนเทศ', href: '/students' },
+  { name: 'ดาวน์โหลด', href: '/curriculum' },
   { name: 'แกลเลอรี่', href: '/gallery' },
-  { name: 'ปฏิทิน', href: '/calendar' },
+  { name: 'แจ้งข้อร้องเรียน', href: '/calendar' },
   { name: 'ข่าวสาร', href: '/news' },
   { name: 'ติดต่อ', href: '/contact' },
 ];
@@ -114,7 +114,7 @@ const Navbar = () => {
             ))}
             <Link to="/enrollment" onClick={() => setIsOpen(false)}>
               <Button className="w-full mt-4 bg-accent text-accent-foreground font-semibold hover:bg-accent/90">
-                สมัครเรียน
+                บริจาค
               </Button>
             </Link>
           </div>
