@@ -169,46 +169,7 @@ export const SettingsManagement = () => {
                     </CardContent>
                 </Card>
 
-                {/* Hero Section */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>ส่วน Hero (หน้าแรก)</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="hero_badge">ข้อความ Badge (เช่น เปิดรับสมัครนักเรียนใหม่)</Label>
-                            <Input
-                                id="hero_badge"
-                                value={settings.hero_badge || ''}
-                                onChange={(e) => handleChange('hero_badge', e.target.value)}
-                                placeholder="เปิดรับสมัครนักเรียนใหม่ ปีการศึกษา 2568"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="hero_title_1">ข้อความหัวเรื่อง บรรทัด 1</Label>
-                            <Input
-                                id="hero_title_1"
-                                value={settings.hero_title_1 || ''}
-                                onChange={(e) => handleChange('hero_title_1', e.target.value)}
-                                placeholder="ก้าวสู่อนาคต"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="hero_title_2">ข้อความหัวเรื่อง บรรทัด 2 (สีเน้น)</Label>
-                            <Input
-                                id="hero_title_2"
-                                value={settings.hero_title_2 || ''}
-                                onChange={(e) => handleChange('hero_title_2', e.target.value)}
-                                placeholder="ด้วยปัญญา"
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Stats */}
-                <Card>
+               
                     <CardHeader>
                         <CardTitle>สถิติโรงเรียน (แสดงใน Hero Section)</CardTitle>
                     </CardHeader>
