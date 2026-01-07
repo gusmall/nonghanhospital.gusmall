@@ -42,18 +42,15 @@ const HeroSection = () => {
             <span className="text-accent text-sm font-medium">{settings.hero_badge}</span>
           </div>
 
-          {/* Heading */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-card leading-tight mb-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-            {settings.hero_title_1}
-            <br />
-            <span className="text-accent">{settings.hero_title_2}</span>
-          </h1>
-
-       
-
-          {/* CTA Buttons */}
-        <div className="flex flex-wrap gap-4 mb-12 animate-slide-up" style={{ animationDelay: '0.3s' }}>
           
+       
+ {/* CTA Buttons */}
+          <div className="flex flex-wrap gap-4 mb-12 animate-slide-up" style={{ animationDelay: '0.3s' }}>
+            <Button
+              onClick={() => navigate('/enrollment')}
+              size="lg"
+              className="bg-accent text-accent-foreground font-semibold hover:bg-accent/90 gap-2 h-14 px-8"
+            
             >
               บริจาค
               <ChevronRight className="w-5 h-5" />
