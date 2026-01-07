@@ -78,7 +78,7 @@ const Navbar = () => {
           <div className="hidden lg:block">
             <Link to="/enrollment">
               <Button className="bg-accent text-accent-foreground font-semibold hover:bg-accent/90 transition-all">
-                สมัครเรียน
+               บริจาค
               </Button>
             </Link>
           </div>
