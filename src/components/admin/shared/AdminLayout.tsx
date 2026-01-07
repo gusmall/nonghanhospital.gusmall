@@ -31,7 +31,7 @@ interface AdminLayoutProps {
 const menuItems = [
     { id: 'dashboard', label: 'แดชบอร์ด', icon: LayoutDashboard, path: '/admin/dashboard' },
     { id: 'settings', label: 'ตั้งค่า', icon: Settings, path: '/admin/dashboard?tab=settings' },
-    { id: 'milestones', label: 'ประวัติ', icon: History, path: '/admin/dashboard?tab=milestones' },
+    { id: 'milestones', label: 'ประวัติโรงพยาบาล', icon: History, path: '/admin/dashboard?tab=milestones' },
     { id: 'facilities', label: 'สิ่งอำนวยความสะดวก', icon: Building2, path: '/admin/dashboard?tab=facilities' },
     { id: 'news', label: 'ข่าวสาร', icon: Newspaper, path: '/admin/dashboard?tab=news' },
     { id: 'gallery', label: 'แกลเลอรี่', icon: Image, path: '/admin/dashboard?tab=gallery' },
