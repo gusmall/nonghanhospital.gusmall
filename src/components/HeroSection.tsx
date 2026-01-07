@@ -52,11 +52,8 @@ const HeroSection = () => {
        
 
           {/* CTA Buttons */}
-        
-            <Button
-              onClick={() => navigate('/enrollment')}
-              size="lg"
-              className="bg-accent text-accent-foreground font-semibold hover:bg-accent/90 gap-2 h-14 px-8"
+        <div className="flex flex-wrap gap-4 mb-12 animate-slide-up" style={{ animationDelay: '0.3s' }}>
+          
             >
               บริจาค
               <ChevronRight className="w-5 h-5" />
