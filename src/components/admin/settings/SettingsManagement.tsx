@@ -108,7 +108,7 @@ export const SettingsManagement = () => {
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h1 className="text-3xl font-bold text-foreground">ตั้งค่าระบบ</h1>
-                    <p className="text-muted-foreground">จัดการข้อมูลและการตั้งค่าโรงเรียน</p>
+                    <p className="text-muted-foreground">จัดการข้อมูลและการตั้งค่า</p>
                 </div>
                 <Button onClick={handleSave} disabled={saving} className="gap-2">
                     <Save className="w-4 h-4" />
@@ -127,12 +127,12 @@ export const SettingsManagement = () => {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="school_name">ชื่อโรงเรียน</Label>
+                            <Label htmlFor="school_name">ชื่อ</Label>
                             <Input
                                 id="school_name"
                                 value={settings.school_name || ''}
                                 onChange={(e) => handleChange('school_name', e.target.value)}
-                                placeholder="โรงเรียน..."
+                                placeholder="..."
                             />
                         </div>
 
