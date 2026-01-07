@@ -45,7 +45,7 @@ const Navbar = () => {
           <Link to="/" className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
               
-            </div>
+           
             
             </div>
             <div className="hidden sm:block">
