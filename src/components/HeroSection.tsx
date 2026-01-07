@@ -52,7 +52,7 @@ const HeroSection = () => {
        
 
           {/* CTA Buttons */}
-          <div className="flex flex-wrap gap-4 mb-12 animate-slide-up" style={{ animationDelay: '0.3s' }}>
+        
             <Button
               onClick={() => navigate('/enrollment')}
               size="lg"
