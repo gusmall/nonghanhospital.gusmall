@@ -44,7 +44,8 @@ const Navbar = () => {
          {/* Logo */}
           <Link to="/" className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
-              
+                
+              <span className="text-accent font-bold text-xl">โรงพยาบาลหนองหาน</span>
            
             
             </div>
