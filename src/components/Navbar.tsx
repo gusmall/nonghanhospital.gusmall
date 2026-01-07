@@ -41,15 +41,19 @@ const Navbar = () => {
     >
       <div className="container mx-auto px-4">
         <nav className="flex items-center justify-between h-20">
-         {/* Logo */}
+              {/* Logo */}
           <Link to="/" className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
-                
-              <span className="text-accent font-bold text-xl">โรงพยาบาลหนองหาน</span>
-           
-            
+              <span className="text-accent font-bold text-xl"></span>
             </div>
-            
+            <div className="hidden sm:block">
+              <h1 className={`text-lg font-bold transition-colors ${scrolled || !isHomePage ? 'text-primary' : 'text-card'}`}>
+                {settings.school_name}
+              </h1>
+              <p className={`text-xs transition-colors ${scrolled || !isHomePage ? 'text-muted-foreground' : 'text-card/80'}`}>
+                {settings.school_tagline}
+              </p>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
