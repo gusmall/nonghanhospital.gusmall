@@ -82,7 +82,7 @@ export interface SchoolSettings {
 const defaultSettings: SchoolSettings = {
     school_name: 'โรงเรียนห้องสื่อครูคอมวิทยาคม',
     school_tagline: 'ก้าวสู่อนาคตด้วยปัญญา',
-    school_description: 'สถาบันการศึกษาชั้นนำระดับมัธยมศึกษา มุ่งมั่นพัฒนาผู้เรียนให้มีความเป็นเลิศทางวิชาการ',
+  
     school_vision: 'มุ่งมั่นพัฒนาผู้เรียนให้มีความเป็นเลิศทางวิชาการ มีคุณธรรม จริยธรรม',
     school_mission: 'จัดการศึกษาที่มีคุณภาพ พัฒนาครูและบุคลากร',
     school_values: 'ซื่อสัตย์ วินัย ใฝ่เรียนรู้',
